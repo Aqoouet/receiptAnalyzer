@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
@@ -33,7 +34,7 @@ func ConnectToEmail(cfg *Config) (*client.Client, error) {
 // При limit > 0 загружает не более limit писем, иначе – все доступные.
 // Функция также обновляет last_uid.txt, чтобы при следующем запуске не обрабатывать
 // одни и те же сообщения повторно.
-func FetchMessages(c *client.Client, limit int) ([]*imap.Message, error) {
+func FetchMessages(c *client.Client, limit int, stateDir string) ([]*imap.Message, error) {
 	log.Println("Выбираем папку INBOX")
 	mbox, err := c.Select("INBOX", false)
 	if err != nil {
@@ -45,7 +46,7 @@ func FetchMessages(c *client.Client, limit int) ([]*imap.Message, error) {
 	}
 
 	// UID последнего обработанного письма, чтобы не обрабатывать дубликаты
-	lastUID := loadLastUID()
+	lastUID := loadLastUID(stateDir)
 	log.Printf("Последний обработанный UID: %d", lastUID)
 
 	section := &imap.BodySectionName{} // пустой раздел = всё письмо целиком
@@ -93,7 +94,7 @@ func FetchMessages(c *client.Client, limit int) ([]*imap.Message, error) {
 		}
 	}
 	if highest > lastUID {
-		saveLastUID(highest)
+		saveLastUID(highest, stateDir)
 	}
 
 	return messages, nil
@@ -101,8 +102,8 @@ func FetchMessages(c *client.Client, limit int) ([]*imap.Message, error) {
 
 // loadLastUID читает UID последнего обработанного письма из файла state/last_uid.txt.
 // Если файл отсутствует или повреждён – возвращается 0.
-func loadLastUID() int {
-	f, err := os.Open("state/last_uid.txt")
+func loadLastUID(stateDir string) int {
+	f, err := os.Open(filepath.Join(stateDir, "last_uid.txt"))
 	if err != nil {
 		return 0
 	}
@@ -116,9 +117,9 @@ func loadLastUID() int {
 }
 
 // saveLastUID сохраняет максимальный UID в файл state/last_uid.txt для будущих запусков.
-func saveLastUID(uid int) {
-	_ = os.MkdirAll("state", 0o755)
-	f, err := os.Create("state/last_uid.txt")
+func saveLastUID(uid int, stateDir string) {
+	_ = os.MkdirAll(stateDir, 0o755)
+	f, err := os.Create(filepath.Join(stateDir, "last_uid.txt"))
 	if err != nil {
 		log.Printf("Не удалось записать last UID: %v", err)
 		return

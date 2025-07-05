@@ -24,8 +24,19 @@ var savedHashes map[string]struct{}
 func loadSavedHashes() {
 	log.Println("Загружаем сохранённые хэши из msg_html/index.txt")
 	savedHashes = make(map[string]struct{})
+
+	// Создаем директорию если её нет
+	_ = os.MkdirAll("msg_html", 0755)
+
 	f, err := os.Open("msg_html/index.txt")
 	if err != nil {
+		if os.IsNotExist(err) {
+			log.Println("Файл index.txt не найден - создаем новый")
+			// Создаем пустой файл
+			if f, err := os.Create("msg_html/index.txt"); err == nil {
+				f.Close()
+			}
+		}
 		return // файла нет – значит карта пустая
 	}
 	defer f.Close()

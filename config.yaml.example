@@ -1,0 +1,48 @@
+# Пример конфигурационного файла для ReceiptAnalyzer
+# Скопируйте этот файл в config.yaml и заполните своими данными
+
+email:
+  # IMAP сервер для подключения к почте
+  imap_server: "imap.yandex.ru:993"
+  
+  # Ваш email адрес
+  username: "your-email@yandex.ru"
+  
+  # OAuth токен или пароль приложения
+  # Для Yandex: пароль для внешних приложений
+  # Для Gmail: пароль приложения
+  oauth_token: "your-oauth-token-here"
+
+storage:
+  # Путь к SQLite базе данных
+  db_path: "output/receipts.db"
+  
+  # Путь к Excel файлу с экспортом
+  xlsx_path: "output/receipts.xlsx"
+
+paths:
+  # Папка для сохранения HTML писем
+  html_dir: "output/msg_html"
+  
+  # Папка для сохранения состояния приложения
+  state_dir: "output/state"
+
+# Примеры настроек для разных почтовых сервисов:
+
+# Yandex
+# email:
+#   imap_server: "imap.yandex.ru:993"
+#   username: "your-email@yandex.ru"
+#   oauth_token: "your-app-password"
+
+# Gmail
+# email:
+#   imap_server: "imap.gmail.com:993"
+#   username: "your-email@gmail.com"
+#   oauth_token: "your-app-password"
+
+# Mail.ru
+# email:
+#   imap_server: "imap.mail.ru:993"
+#   username: "your-email@mail.ru"
+#   oauth_token: "your-app-password" 

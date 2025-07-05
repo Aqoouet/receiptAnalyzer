@@ -1,3 +1,47 @@
+# Конфигурация с реальными данными
+config.yaml
+
+# Результаты работы приложения
+output/
+*.db
+*.xlsx
+
+# Временные файлы
+*.tmp
+*.log
+*.bak
+
+# Бинарные файлы
+receiptAnalyzer
+*.exe
+*.dll
+*.so
+*.dylib
+
+# IDE и редакторы
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Go специфичные файлы
+*.test
+*.out
+go.work
+
+# Системные файлы
+.DS_Store
+Thumbs.db
+
+# Логи
+logs/
+*.log
+
+# Резервные копии
+backup/
+*.backup
+
 cmd/config.yaml
 Снимок экрана_20250701_144206.png
 .ya.kate-swp

@@ -3,12 +3,17 @@ package main
 import (
 	"flag"
 	"log"
+	"os"
+
+	_ "modernc.org/sqlite"
 )
 
 func main() {
+	configPath := flag.String("config", "../config.yaml", "Путь к файлу конфигурации")
 	saveEmails := flag.Bool("save_new_emails", false, "Скачать новые письма и сохранить их в каталог msg_html")
 	importHTML := flag.Bool("import_saved_html", false, "Импортировать ранее сохранённые HTML-письма в базу данных")
 	quantity := flag.Int("quantityToProcess", -1, "Количество писем для обработки (-1 = все)")
+	rebuild := flag.Bool("rebuild_db", false, "Удалить текущую базу и создать заново (используйте вместе с -import_saved_html)")
 	flag.Parse()
 
 	// Проверяем взаимную исключительность режимов
@@ -18,7 +23,7 @@ func main() {
 
 	log.Printf("Запуск анализатора чеков. save_new_emails=%v, import_saved_html=%v, quantityToProcess=%d", *saveEmails, *importHTML, *quantity)
 
-	cfg, err := LoadConfig("config.yaml")
+	cfg, err := LoadConfig(*configPath)
 	if err != nil {
 		log.Fatalf("Ошибка загрузки конфигурации: %v", err)
 	}
@@ -35,7 +40,7 @@ func main() {
 
 		log.Println("Соединение с почтовым сервером установлено")
 
-		messages, err := FetchMessages(imapClient, *quantity)
+		messages, err := FetchMessages(imapClient, *quantity, cfg.Paths.StateDir)
 		if err != nil {
 			log.Fatalf("Ошибка получения сообщений: %v", err)
 		}
@@ -45,6 +50,11 @@ func main() {
 		log.Println("Сохранение писем завершено")
 	} else if *importHTML {
 		// --- Режим импорта HTML в базу ---
+		if *rebuild {
+			log.Printf("Флаг rebuild_db активен — удаляем %s", cfg.Storage.DBPath)
+			_ = os.Remove(cfg.Storage.DBPath)
+		}
+
 		store, err := InitializeStorage(cfg)
 		if err != nil {
 			log.Fatalf("Ошибка инициализации хранилища: %v", err)
@@ -52,11 +62,16 @@ func main() {
 
 		log.Println("Хранилище инициализировано")
 
-		imported, err := ImportSavedHTML(store)
+		imported, skipped, err := ImportSavedHTML(store, cfg.Paths.HTMLDir)
 		if err != nil {
 			log.Fatalf("Ошибка импорта HTML: %v", err)
 		}
-		log.Printf("Импортировано чеков: %d", imported)
+		log.Printf("Импортировано чеков: %d, пропущено: %d", imported, skipped)
+
+		// Экспортируем в XLSX
+		if err := ExportToXLSX(store, cfg.Storage.XLSXPath); err != nil {
+			log.Printf("Ошибка экспорта в XLSX: %v", err)
+		}
 	} else {
 		log.Println("Ни один режим не выбран. Запустите программу с -save_new_emails или -import_saved_html.")
 	}
