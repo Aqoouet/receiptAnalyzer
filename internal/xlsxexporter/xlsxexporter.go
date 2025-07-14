@@ -1,4 +1,4 @@
-package main
+package xlsxexporter
 
 import (
 	"fmt"
@@ -6,11 +6,21 @@ import (
 	"os"
 	"path/filepath"
 
+	"receiptAnalyzer/internal/config"
 	"receiptAnalyzer/internal/receipt"
 	"receiptAnalyzer/internal/storage"
 
 	"github.com/xuri/excelize/v2"
 )
+
+// ExportAll экспортирует данные в XLSX (заглушка)
+func ExportAll(cfg *config.Config) error {
+	store, err := storage.NewSQLiteStorage(cfg.Storage.DBPath)
+	if err != nil {
+		return err
+	}
+	return ExportToXLSX(store, cfg.Storage.XLSXPath)
+}
 
 // ExportToXLSX экспортирует все чеки и их позиции в XLSX файл
 func ExportToXLSX(store storage.Storage, xlsxPath string) error {

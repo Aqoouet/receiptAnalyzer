@@ -27,6 +27,12 @@ paths:
   # Папка для сохранения состояния приложения
   state_dir: "output/state"
 
+ports:
+  mailfetcher: 8081
+  htmlimporter: 8082
+  xlsxexporter: 8083
+  qwencategorizer: 8084
+
 # Примеры настроек для разных почтовых сервисов:
 
 # Yandex

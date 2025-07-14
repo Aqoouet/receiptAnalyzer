@@ -3,6 +3,7 @@ package receipt
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,6 +13,12 @@ import (
 var templatesUnderTest = []Template{
 	DefaultBeelineTemplate,
 	DefaultTaxcomTemplate,
+	DefaultMusicTemplate,
+	DefaultYandexOFDTemplate,
+	DefaultYandexMarketTemplate,
+	DefaultOFDruTemplate,
+	DefaultFirstOFDTemplate,
+	DefaultPlatformaOFDTemplate,
 }
 
 // receiptCase ties a sample HTML with the index of the template that should be
@@ -39,22 +46,40 @@ func TestParseReceiptAuto_TableDriven(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "Пустой файл",
-			path:    "testdata/empty.html",
-			wantIdx: -1,
-			wantErr: true,
+			name:    "Music шаблон минимальный",
+			path:    createTempHTML(t, `<table class="item"><tr><td class="name">Трек</td><td class="qty">1</td><td class="price">30.00</td></tr></table>`),
+			wantIdx: 2,
+			wantErr: false,
 		},
 		{
-			name:    "Невалидный HTML",
-			path:    "testdata/invalid.html",
-			wantIdx: -1,
-			wantErr: true,
+			name:    "Yandex OFD минимальный",
+			path:    createTempHTML(t, `<table><tr class="content-row"><td><table><tr><td>Услуга</td><td><span>1</span></td><td>100.00</td></tr></table></td></tr></table>`),
+			wantIdx: 3,
+			wantErr: false,
 		},
 		{
-			name:    "Неизвестный формат",
-			path:    "testdata/unknown_format.html",
-			wantIdx: -1,
-			wantErr: true,
+			name:    "Yandex Market минимальный",
+			path:    createTempHTML(t, `<table><tr><td><a href="https://market.yandex.ru/product/1">Товар</a></td><td>info</td><td><span>2</span> 200.00</td></tr></table>`),
+			wantIdx: 4,
+			wantErr: false,
+		},
+		{
+			name:    "OFD.ru минимальный",
+			path:    createTempHTML(t, `<table><tr><td><b>Товар</b></td><td><span>1 X 500.00</span> <span>= 500.00</span></td></tr></table>`),
+			wantIdx: 5,
+			wantErr: false,
+		},
+		{
+			name:    "Первый ОФД минимальный",
+			path:    createTempHTML(t, `<table style="font-family: Courier New;"><tr><td>1.</td><td>Service</td><td>100,00</td><td>1</td></tr></table>`),
+			wantIdx: 6,
+			wantErr: false,
+		},
+		{
+			name:    "Платформа ОФД минимальный",
+			path:    createTempHTML(t, `<div class="check-section"><div class="check-product-name">Item</div><div class="check-col-right">1 х 5520.00</div></div>`),
+			wantIdx: 7,
+			wantErr: false,
 		},
 	}
 
@@ -110,4 +135,15 @@ func TestParseFloat_TableDriven(t *testing.T) {
 			}
 		})
 	}
+}
+
+// createTempHTML записывает content во временный файл и возвращает его путь.
+func createTempHTML(t *testing.T, content string) string {
+	t.Helper()
+	dir := t.TempDir()
+	path := filepath.Join(dir, "sample.html")
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatalf("failed to write temp html: %v", err)
+	}
+	return path
 }

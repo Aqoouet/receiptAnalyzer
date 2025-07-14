@@ -5,21 +5,16 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Receipt Analyzer (save emails)",
+            "name": "Mailfetcher Debug",
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${workspaceFolder}/receiptAnalyzer/cmd",
+            "program": "${workspaceFolder}/cmd/mailfetcher/main.go",
+            "cwd": "${workspaceFolder}",
             "env": {
                 "CGO_ENABLED": "0"
             },
-            "args": [
-                "-save_new_emails",
-            ],
-            "args": [
-                "-quantityToProcess",
-                "10"
-            ]
+            "args": []
         }
     ]
 }

@@ -48,15 +48,15 @@ receiptAnalyzer/
 
 - **Go 1.24+** — [скачать](https://golang.org/dl/)
 - **IMAP-доступ** к почтовому ящику, где приходят чеки
-- **OAuth-токен** (Yandex / Gmail и др.)
-  - Yandex (2-FA): создайте «Пароль приложения» — <https://passport.yandex.ru/profile>
-  - Yandex (без 2-FA): получите токен — <https://oauth.yandex.ru/>
+- **OAuth-токен Яндекс**
+  - 2-FA: создайте «Пароль приложения» — <https://passport.yandex.ru/profile>
+  - Без 2-FA: получите токен — <https://oauth.yandex.ru/>
 
 ### Установка
 
 1. **Клонируйте репозиторий:**
 ```bash
-git clone <repository-url>
+git clone https://github.com/Aqoouet/receiptAnalyzer.git
 cd receiptAnalyzer
 ```
 
@@ -94,19 +94,6 @@ paths:
   html_dir: "output/msg_html"        # Папка для HTML писем
   state_dir: "output/state"          # Папка для состояния
 ```
-
-### Получение OAuth токена
-
-#### Для Yandex:
-1. Перейдите в [Настройки безопасности](https://passport.yandex.ru/security)
-2. Включите "Пароли для внешних приложений"
-3. Создайте новый пароль для приложения
-4. Используйте этот пароль как `oauth_token`
-
-#### Для Gmail:
-1. Включите двухфакторную аутентификацию
-2. Создайте пароль приложения в настройках безопасности
-3. Используйте пароль приложения как `oauth_token`
 
 ## 📖 Использование
 
@@ -148,10 +135,13 @@ paths:
 
 | Флаг | Описание | Пример |
 |------|----------|--------|
-| `-config` | Путь к файлу конфигурации | `-config config.yaml` |
+| `-config` | Путь к YAML-конфигу (необязателен, по умолчанию `config.yaml`) | `-config custom.yaml` |
 | `-save_new_emails` | Скачать новые письма | `-save_new_emails` |
 | `-import_saved_html` | Импортировать HTML в базу | `-import_saved_html` |
-| `-quantityToProcess` | Количество писем (-1 = все) | `-quantityToProcess 50` |
+| `-quantityToProcess` | Сколько писем обработать за один запуск.  
+По умолчанию `-1` — обрабатываются **все** новые письма.  
+Полезен при разработке/отладке, чтобы ускорить цикл и не скачивать большой архив:  
+`-quantityToProcess 20` — обработать только первые 20 писем. | `-quantityToProcess 20` |
 | `-rebuild_db` | Пересоздать базу данных | `-rebuild_db` |
 
 ## 📊 Структура данных

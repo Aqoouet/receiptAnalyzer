@@ -1,9 +1,11 @@
-package main
+package config_test
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"receiptAnalyzer/internal/config"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -19,7 +21,7 @@ func TestLoadConfig_TableDriven(t *testing.T) {
 		name        string
 		setupConfig func() string
 		wantErr     bool
-		checkConfig func(*testing.T, *Config)
+		checkConfig func(*testing.T, *config.Config)
 	}{
 		{
 			name: "Валидная конфигурация",
@@ -42,7 +44,7 @@ paths:
 				return configPath
 			},
 			wantErr: false,
-			checkConfig: func(t *testing.T, cfg *Config) {
+			checkConfig: func(t *testing.T, cfg *config.Config) {
 				assert.Equal(t, "imap.yandex.ru:993", cfg.Email.IMAPServer)
 				assert.Equal(t, "test@yandex.ru", cfg.Email.Username)
 				assert.Equal(t, "test-token", cfg.Email.OAuthToken)
@@ -68,14 +70,14 @@ storage:
 				return configPath
 			},
 			wantErr: false,
-			checkConfig: func(t *testing.T, cfg *Config) {
+			checkConfig: func(t *testing.T, cfg *config.Config) {
 				assert.Equal(t, "imap.gmail.com:993", cfg.Email.IMAPServer)
 				assert.Equal(t, "test@gmail.com", cfg.Email.Username)
 				assert.Equal(t, "", cfg.Email.OAuthToken)
 				assert.Equal(t, "custom.db", cfg.Storage.DBPath)
 				assert.Equal(t, "receipts.xlsx", cfg.Storage.XLSXPath) // дефолт
-				assert.Equal(t, "cmd/msg_html", cfg.Paths.HTMLDir)     // дефолт
-				assert.Equal(t, "cmd/state", cfg.Paths.StateDir)       // дефолт
+				assert.Equal(t, "output/msg_html", cfg.Paths.HTMLDir)  // дефолт
+				assert.Equal(t, "output/state", cfg.Paths.StateDir)    // дефолт
 			},
 		},
 		{
@@ -88,14 +90,14 @@ storage:
 				return configPath
 			},
 			wantErr: false,
-			checkConfig: func(t *testing.T, cfg *Config) {
+			checkConfig: func(t *testing.T, cfg *config.Config) {
 				assert.Equal(t, "", cfg.Email.IMAPServer)
 				assert.Equal(t, "", cfg.Email.Username)
 				assert.Equal(t, "", cfg.Email.OAuthToken)
 				assert.Equal(t, "receipts.db", cfg.Storage.DBPath)     // дефолт
 				assert.Equal(t, "receipts.xlsx", cfg.Storage.XLSXPath) // дефолт
-				assert.Equal(t, "cmd/msg_html", cfg.Paths.HTMLDir)     // дефолт
-				assert.Equal(t, "cmd/state", cfg.Paths.StateDir)       // дефолт
+				assert.Equal(t, "output/msg_html", cfg.Paths.HTMLDir)  // дефолт
+				assert.Equal(t, "output/state", cfg.Paths.StateDir)    // дефолт
 			},
 		},
 		{
@@ -120,7 +122,7 @@ invalid: yaml: syntax: error
 				return configPath
 			},
 			wantErr: true,
-			checkConfig: func(t *testing.T, cfg *Config) {
+			checkConfig: func(t *testing.T, cfg *config.Config) {
 				// Не должно выполняться при ошибке
 			},
 		},
@@ -130,7 +132,7 @@ invalid: yaml: syntax: error
 				return filepath.Join(tempDir, "nonexistent.yaml")
 			},
 			wantErr: false,
-			checkConfig: func(t *testing.T, cfg *Config) {
+			checkConfig: func(t *testing.T, cfg *config.Config) {
 				assert.Equal(t, "", cfg.Email.IMAPServer)
 				assert.Equal(t, "", cfg.Email.Username)
 				assert.Equal(t, "", cfg.Email.OAuthToken)
@@ -159,14 +161,14 @@ paths:
 				return configPath
 			},
 			wantErr: false,
-			checkConfig: func(t *testing.T, cfg *Config) {
+			checkConfig: func(t *testing.T, cfg *config.Config) {
 				assert.Equal(t, "", cfg.Email.IMAPServer)
 				assert.Equal(t, "", cfg.Email.Username)
 				assert.Equal(t, "", cfg.Email.OAuthToken)
 				assert.Equal(t, "receipts.db", cfg.Storage.DBPath)     // дефолт
 				assert.Equal(t, "receipts.xlsx", cfg.Storage.XLSXPath) // дефолт
-				assert.Equal(t, "cmd/msg_html", cfg.Paths.HTMLDir)     // дефолт
-				assert.Equal(t, "cmd/state", cfg.Paths.StateDir)       // дефолт
+				assert.Equal(t, "output/msg_html", cfg.Paths.HTMLDir)  // дефолт
+				assert.Equal(t, "output/state", cfg.Paths.StateDir)    // дефолт
 			},
 		},
 	}
@@ -175,7 +177,7 @@ paths:
 		t.Run(tt.name, func(t *testing.T) {
 			configPath := tt.setupConfig()
 
-			cfg, err := LoadConfig(configPath)
+			cfg, err := config.LoadConfig(configPath)
 
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -195,12 +197,12 @@ func TestConfig_Validation(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		config  *Config
+		config  *config.Config
 		isValid bool
 	}{
 		{
 			name: "Полная валидная конфигурация",
-			config: &Config{
+			config: &config.Config{
 				Email: struct {
 					IMAPServer string `yaml:"imap_server"`
 					Username   string `yaml:"username"`
@@ -229,7 +231,7 @@ func TestConfig_Validation(t *testing.T) {
 		},
 		{
 			name:    "Конфигурация с дефолтами",
-			config:  &Config{},
+			config:  &config.Config{},
 			isValid: true, // дефолты применяются в LoadConfig
 		},
 	}

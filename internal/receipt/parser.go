@@ -64,26 +64,7 @@ type Template struct {
 	QtyCleanupRegexp   *regexp.Regexp
 }
 
-// DefaultBeelineTemplate is tuned for the HTML sent by ofdreceipt@beeline.ru
-// (OFD receipt e-mails). It should correctly parse cheques from "Перекрёсток".
-var DefaultBeelineTemplate = Template{
-	ItemSelector:       "table[style*='color: #4a4a4a'][style*='line-height: 19px']",
-	NameSelector:       "td:not([width='44']) span[style*='font-weight: bold']",
-	PriceSelector:      "td:contains('Цена*Кол') + td",
-	QtySelector:        "td:contains('Цена*Кол') + td + td",
-	PriceCleanupRegexp: regexp.MustCompile(`[^0-9.,]`),
-	QtyCleanupRegexp:   regexp.MustCompile(`[^0-9.,]`),
-}
-
-// DefaultTaxcomTemplate is tuned for e-mails от noreply@taxcom.ru (EОT Чека).
-var DefaultTaxcomTemplate = Template{
-	ItemSelector:       "div.item",
-	NameSelector:       "span.receipt-value-1030",
-	QtySelector:        "span.receipt-value-1023",
-	PriceSelector:      "span.receipt-value-1079",
-	PriceCleanupRegexp: regexp.MustCompile(`[^0-9.,]`),
-	QtyCleanupRegexp:   regexp.MustCompile(`[^0-9.,a-zA-Zа-яА-Я ]`),
-}
+// Шаблоны по умолчанию вынесены в templates.go
 
 var companyRegexp = regexp.MustCompile(`(?i)(АО|ООО|ОАО|ЗАО|ИП)`) // Russian company forms
 

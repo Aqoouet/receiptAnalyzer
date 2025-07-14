@@ -1,13 +1,17 @@
-package main
+package mailfetcher
 
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"receiptAnalyzer/internal/config"
+
+	"github.com/emersion/go-imap"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -76,8 +80,6 @@ func TestSanitizeString_TableDriven(t *testing.T) {
 }
 
 func TestLoadSavedHashes_TableDriven(t *testing.T) {
-	t.Skip("Skipping hash loading tests pending refactor")
-
 	tempDir := t.TempDir()
 
 	tests := []struct {
@@ -144,18 +146,24 @@ func TestLoadSavedHashes_TableDriven(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Временно изменяем путь для теста
+			// Уникальная директория для каждого под-теста
+			oldHtmlDir := htmlDir
+			htmlDir = filepath.Join(tempDir, t.Name())
+			t.Cleanup(func() { htmlDir = oldHtmlDir })
+
 			indexPath := tt.setupIndex()
 
 			// Создаем временную директорию msg_html
-			testMsgHTMLDir := filepath.Join(tempDir, "msg_html")
+			testMsgHTMLDir := htmlDir
 			err := os.MkdirAll(testMsgHTMLDir, 0755)
 			require.NoError(t, err)
 
 			// Копируем файл в правильное место
 			if indexPath != filepath.Join(tempDir, "nonexistent.txt") {
 				targetPath := filepath.Join(testMsgHTMLDir, "index.txt")
-				err = os.WriteFile(targetPath, []byte(""), 0644)
+				content, err := os.ReadFile(indexPath)
+				require.NoError(t, err)
+				err = os.WriteFile(targetPath, content, 0644)
 				require.NoError(t, err)
 			}
 
@@ -173,9 +181,10 @@ func TestLoadSavedHashes_TableDriven(t *testing.T) {
 }
 
 func TestAppendHash_TableDriven(t *testing.T) {
-	t.Skip("Skipping hash append tests pending refactor")
-
 	tempDir := t.TempDir()
+	oldHtmlDir := htmlDir
+	htmlDir = filepath.Join(tempDir, "msg_html")
+	t.Cleanup(func() { htmlDir = oldHtmlDir })
 
 	tests := []struct {
 		name       string
@@ -223,6 +232,19 @@ func TestAppendHash_TableDriven(t *testing.T) {
 			// Инициализируем глобальную переменную
 			savedHashes = make(map[string]struct{})
 
+			// Создаем директорию msg_html
+			err := os.MkdirAll(htmlDir, 0755)
+			require.NoError(t, err)
+
+			// Копируем файл в правильное место
+			if _, err := os.Stat(indexPath); err == nil {
+				targetPath := filepath.Join(htmlDir, "index.txt")
+				content, err := os.ReadFile(indexPath)
+				require.NoError(t, err)
+				err = os.WriteFile(targetPath, content, 0644)
+				require.NoError(t, err)
+			}
+
 			// Вызываем функцию
 			appendHash(tt.hash)
 
@@ -231,7 +253,7 @@ func TestAppendHash_TableDriven(t *testing.T) {
 
 			// Проверяем, что хэш записан в файл
 			if !tt.wantErr {
-				content, err := os.ReadFile(indexPath)
+				content, err := os.ReadFile(filepath.Join(htmlDir, "index.txt"))
 				if err == nil {
 					assert.Contains(t, string(content), tt.hash)
 				}
@@ -244,9 +266,10 @@ func TestAppendHash_TableDriven(t *testing.T) {
 }
 
 func TestSaveEmailHTML_TableDriven(t *testing.T) {
-	t.Skip("Skipping email HTML save tests pending refactor")
-
 	tempDir := t.TempDir()
+	oldHtmlDir := htmlDir
+	htmlDir = filepath.Join(tempDir, "msg_html")
+	t.Cleanup(func() { htmlDir = oldHtmlDir })
 
 	tests := []struct {
 		name        string
@@ -314,21 +337,20 @@ func TestSaveEmailHTML_TableDriven(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Создаем временную директорию msg_html
-			testMsgHTMLDir := filepath.Join(tempDir, "msg_html")
-			err := os.MkdirAll(testMsgHTMLDir, 0755)
+			err := os.MkdirAll(htmlDir, 0755)
 			require.NoError(t, err)
 
 			// Инициализируем хэши
 			tt.setupHashes()
 
 			// Вызываем функцию
-			saveEmailHTML(tt.sender, tt.subject, tt.date, tt.body)
+			saveEmailHTML("INBOX", 1, tt.sender, tt.subject, tt.date, tt.body, htmlDir)
 
 			// Проверяем результат
 			if tt.expectFile {
 				// Проверяем, что файл создан
 				expectedFilename := tt.date.Format("20060102_150405") + "_" + sanitizeString(tt.sender) + "_" + sanitizeString(tt.subject) + ".html"
-				filePath := filepath.Join(testMsgHTMLDir, expectedFilename)
+				filePath := filepath.Join(htmlDir, expectedFilename)
 				_, err := os.Stat(filePath)
 				assert.NoError(t, err)
 
@@ -358,12 +380,12 @@ func TestInitializeStorage_TableDriven(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		config  *Config
+		config  *config.Config
 		wantErr bool
 	}{
 		{
 			name: "Валидная конфигурация",
-			config: &Config{
+			config: &config.Config{
 				Storage: struct {
 					DBPath   string `yaml:"db_path"`
 					XLSXPath string `yaml:"xlsx_path"`
@@ -376,7 +398,7 @@ func TestInitializeStorage_TableDriven(t *testing.T) {
 		},
 		{
 			name: "Пустой путь к БД",
-			config: &Config{
+			config: &config.Config{
 				Storage: struct {
 					DBPath   string `yaml:"db_path"`
 					XLSXPath string `yaml:"xlsx_path"`
@@ -401,6 +423,73 @@ func TestInitializeStorage_TableDriven(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.NotNil(t, storage)
+		})
+	}
+}
+
+// Диагностический тест для IMAP SELECT
+func TestIMAPSelectAllMailboxes(t *testing.T) {
+	cfg, err := config.LoadConfig("config.yaml")
+	require.NoError(t, err)
+
+	c, err := ConnectToEmail(cfg)
+	require.NoError(t, err)
+	defer c.Logout()
+
+	mailboxes := make(chan *imap.MailboxInfo, 10)
+	done := make(chan error, 1)
+	go func() { done <- c.List("", "*", mailboxes) }()
+
+	shouldProcess := func(name string) bool {
+		for _, prefix := range cfg.MailboxPrefixes {
+			if name == prefix || (len(prefix) > 0 && len(name) >= len(prefix) && name[:len(prefix)] == prefix) {
+				return true
+			}
+		}
+		return false
+	}
+
+	for m := range mailboxes {
+		mboxName := m.Name
+		flags := m.Attributes
+		logMsg := func() string {
+			return "[IMAP] Папка: '" + mboxName + "', флаги: " + fmt.Sprint(flags)
+		}
+		// Пропускаем папки с флагом \Noselect
+		isNoSelect := false
+		for _, f := range flags {
+			if f == "\\Noselect" {
+				isNoSelect = true
+				break
+			}
+		}
+		if isNoSelect {
+			t.Logf("Пропускаю %s (Noselect)", logMsg())
+			continue
+		}
+		if !shouldProcess(mboxName) {
+			t.Logf("Пропускаю %s (не входит в mailbox_prefixes)", logMsg())
+			continue
+		}
+		t.Run(mboxName, func(t *testing.T) {
+			// t.Parallel() // IMAP-сессия не потокобезопасна
+			t.Logf("SELECT %s, флаги: %v", mboxName, flags)
+			selectDone := make(chan struct{})
+			var selectErr error
+			go func() {
+				_, selectErr = c.Select(mboxName, false)
+				close(selectDone)
+			}()
+			select {
+			case <-selectDone:
+				if selectErr != nil {
+					t.Errorf("SELECT %s error: %v (%s)", mboxName, selectErr, logMsg())
+				} else {
+					t.Logf("SELECT %s OK", mboxName)
+				}
+			case <-time.After(10 * time.Second):
+				t.Errorf("SELECT %s timeout! (%s)", mboxName, logMsg())
+			}
 		})
 	}
 }
