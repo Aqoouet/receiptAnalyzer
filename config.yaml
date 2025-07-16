@@ -11,7 +11,7 @@ email:
   # OAuth токен или пароль приложения
   # Для Yandex: пароль для внешних приложений
   # Для Gmail: пароль приложения
-  oauth_token: "your-oauth-token-here"
+  oauth_token: "gfxqhuhsavtbeuaz"
 
 paths:
   # Путь к SQLite базе данных
@@ -32,6 +32,7 @@ ports:
 mailbox_prefixes:
   - "INBOX"
   - "Receipts|"
+
 search_keywords:
   - "чек"
   - "ЧЕК"
