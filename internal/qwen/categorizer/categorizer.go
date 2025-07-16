@@ -13,16 +13,24 @@ import (
 	"receiptAnalyzer/internal/storage"
 )
 
+// Глобальная переменная для конфигурации
+var globalConfig *config.Config
+
 // StartServer запускает HTTP сервер категоризации
 func StartServer() {
-	http.HandleFunc("/categorize", categorizeHandler)
-	cfg, err := config.LoadConfig("config.yaml")
+	// Загружаем конфигурацию один раз при старте
+	var err error
+	globalConfig, err = config.LoadConfig("")
 	if err != nil {
 		log.Fatalf("Config error: %v", err)
 	}
+	log.Printf("Конфигурация загружена для qwencategorizer")
+
+	http.HandleFunc("/categorize", categorizeHandler)
+
 	port := os.Getenv("QWEN_PORT")
 	if port == "" {
-		port = fmt.Sprintf("%d", cfg.Ports.QwenCategorizer)
+		port = fmt.Sprintf("%d", globalConfig.Ports.QwenCategorizer)
 	}
 	log.Printf("QwenCategorizer listening on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
@@ -33,12 +41,8 @@ func categorizeHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Only POST allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	cfg, err := config.LoadConfig("config.yaml")
-	if err != nil {
-		http.Error(w, "Config error: "+err.Error(), 500)
-		return
-	}
-	stor, err := storage.NewSQLiteStorage(cfg.Storage.DBPath)
+
+	stor, err := storage.NewSQLiteStorage(globalConfig.Paths.DBPath)
 	if err != nil {
 		http.Error(w, "DB error: "+err.Error(), 500)
 		return

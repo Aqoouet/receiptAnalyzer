@@ -9,10 +9,16 @@ import (
 
 // RunAllServices вызывает все микросервисы по порядку
 func RunAllServices() error {
-	cfg, err := config.LoadConfig("config.yaml")
+	cfg, err := config.LoadConfig("")
 	if err != nil {
 		return fmt.Errorf("ошибка загрузки конфига: %w", err)
 	}
+
+	return RunAllServicesWithConfig(cfg)
+}
+
+// RunAllServicesWithConfig вызывает все микросервисы по порядку с переданной конфигурацией
+func RunAllServicesWithConfig(cfg *config.Config) error {
 	steps := []struct {
 		name   string
 		url    string

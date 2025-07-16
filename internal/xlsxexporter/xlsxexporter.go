@@ -15,11 +15,11 @@ import (
 
 // ExportAll экспортирует данные в XLSX (заглушка)
 func ExportAll(cfg *config.Config) error {
-	store, err := storage.NewSQLiteStorage(cfg.Storage.DBPath)
+	store, err := storage.NewSQLiteStorage(cfg.Paths.DBPath)
 	if err != nil {
 		return err
 	}
-	return ExportToXLSX(store, cfg.Storage.XLSXPath)
+	return ExportToXLSX(store, cfg.Paths.XLSXPath)
 }
 
 // ExportToXLSX экспортирует все чеки и их позиции в XLSX файл
@@ -47,7 +47,7 @@ func ExportToXLSX(store storage.Storage, xlsxPath string) error {
 	f.SetSheetName("Sheet1", sheetName)
 
 	// Заголовки для листа чеков
-	headers := []string{"ID", "Магазин", "Дата", "Сумма", "Источник", "Создан"}
+	headers := []string{"Hash", "Sender", "Subject", "Date", "IsReceipt"}
 	for i, header := range headers {
 		cell := fmt.Sprintf("%c1", 'A'+i)
 		f.SetCellValue(sheetName, cell, header)
@@ -56,12 +56,11 @@ func ExportToXLSX(store storage.Storage, xlsxPath string) error {
 	// Заполняем данные чеков
 	for i, r := range receipts {
 		row := i + 2 // начинаем со второй строки (после заголовков)
-		f.SetCellValue(sheetName, fmt.Sprintf("A%d", row), r.ID)
-		f.SetCellValue(sheetName, fmt.Sprintf("B%d", row), r.Shop)
-		f.SetCellValue(sheetName, fmt.Sprintf("C%d", row), r.DateTime.Format("02.01.2006 15:04"))
-		f.SetCellValue(sheetName, fmt.Sprintf("D%d", row), r.Total)
-		f.SetCellValue(sheetName, fmt.Sprintf("E%d", row), r.Source)
-		f.SetCellValue(sheetName, fmt.Sprintf("F%d", row), r.CreatedAt.Format("02.01.2006 15:04"))
+		f.SetCellValue(sheetName, fmt.Sprintf("A%d", row), r.Hash)
+		f.SetCellValue(sheetName, fmt.Sprintf("B%d", row), r.Sender)
+		f.SetCellValue(sheetName, fmt.Sprintf("C%d", row), r.Subject)
+		f.SetCellValue(sheetName, fmt.Sprintf("D%d", row), r.DateTime.Format("02.01.2006 15:04"))
+		f.SetCellValue(sheetName, fmt.Sprintf("E%d", row), r.IsReceipt)
 	}
 
 	// Создаем лист "Позиции"
@@ -78,14 +77,14 @@ func ExportToXLSX(store storage.Storage, xlsxPath string) error {
 	// Заполняем данные позиций
 	row := 2
 	for _, r := range receipts {
-		items, err := getItemsForReceipt(store, r.ID)
+		items, err := getItemsForReceipt(store, r.Hash)
 		if err != nil {
-			log.Printf("Ошибка получения позиций для чека %s: %v", r.ID, err)
+			log.Printf("Ошибка получения позиций для чека %s: %v", r.Hash, err)
 			continue
 		}
 
 		for _, item := range items {
-			f.SetCellValue(itemsSheetName, fmt.Sprintf("A%d", row), r.ID)
+			f.SetCellValue(itemsSheetName, fmt.Sprintf("A%d", row), r.Hash)
 			f.SetCellValue(itemsSheetName, fmt.Sprintf("B%d", row), item.Name)
 			f.SetCellValue(itemsSheetName, fmt.Sprintf("C%d", row), item.Quantity)
 			f.SetCellValue(itemsSheetName, fmt.Sprintf("D%d", row), item.Price)
@@ -114,8 +113,8 @@ func getAllReceipts(store storage.Storage) ([]receipt.Receipt, error) {
 	sqlDB := store.(*storage.SQLiteStorage).RawDB()
 
 	rows, err := sqlDB.Query(`
-		SELECT id, shop, date_time, total, source, created_at 
-		FROM receipts 
+		SELECT hash, sender, subject, date_time, is_receipt
+		FROM receipts
 		ORDER BY date_time DESC
 	`)
 	if err != nil {
@@ -126,7 +125,7 @@ func getAllReceipts(store storage.Storage) ([]receipt.Receipt, error) {
 	var receipts []receipt.Receipt
 	for rows.Next() {
 		var r receipt.Receipt
-		err := rows.Scan(&r.ID, &r.Shop, &r.DateTime, &r.Total, &r.Source, &r.CreatedAt)
+		err := rows.Scan(&r.Hash, &r.Sender, &r.Subject, &r.DateTime, &r.IsReceipt)
 		if err != nil {
 			return nil, err
 		}
@@ -137,7 +136,7 @@ func getAllReceipts(store storage.Storage) ([]receipt.Receipt, error) {
 }
 
 // getItemsForReceipt получает все позиции для конкретного чека
-func getItemsForReceipt(store storage.Storage, receiptID string) ([]receipt.Item, error) {
+func getItemsForReceipt(store storage.Storage, receiptHash string) ([]receipt.Item, error) {
 	sqlDB := store.(*storage.SQLiteStorage).RawDB()
 
 	rows, err := sqlDB.Query(`
@@ -145,7 +144,7 @@ func getItemsForReceipt(store storage.Storage, receiptID string) ([]receipt.Item
 		FROM items 
 		WHERE receipt_id = ? 
 		ORDER BY id
-	`, receiptID)
+	`, receiptHash)
 	if err != nil {
 		return nil, err
 	}

@@ -13,15 +13,12 @@ import (
 	"time"
 )
 
+// Глобальная переменная для конфигурации
+var globalConfig *config.Config
+
 func cleanUpHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("[cleanUpHandler] Старт очистки писем")
-	cfg, err := config.LoadConfig("config.yaml")
-	if err != nil {
-		log.Printf("[cleanUpHandler] Ошибка загрузки конфига: %v", err)
-		http.Error(w, "Config error: "+err.Error(), 500)
-		return
-	}
-	htmlDir := cfg.Paths.HTMLDir
+	htmlDir := globalConfig.Paths.HTMLDirPath
 	files, err := os.ReadDir(htmlDir)
 	if err != nil {
 		log.Printf("[cleanUpHandler] Ошибка чтения директории: %v", err)
@@ -46,15 +43,21 @@ func cleanUpHandler(w http.ResponseWriter, r *http.Request) {
 
 func StartServer() {
 	log.Println("[StartServer] Запуск сервера mailfetcher")
-	http.HandleFunc("/fetch-emails", fetchEmailsHandler)
-	http.HandleFunc("/clean_up", cleanUpHandler)
-	cfg, err := config.LoadConfig("config.yaml")
+
+	// Загружаем конфигурацию один раз при старте
+	var err error
+	globalConfig, err = config.LoadConfig("")
 	if err != nil {
 		log.Fatalf("Config error: %v", err)
 	}
+	log.Printf("[StartServer] Конфигурация загружена для mailfetcher")
+
+	http.HandleFunc("/fetch-emails", fetchEmailsHandler)
+	http.HandleFunc("/clean_up", cleanUpHandler)
+
 	port := os.Getenv("MAILFETCHER_PORT")
 	if port == "" {
-		port = fmt.Sprintf("%d", cfg.Ports.Mailfetcher)
+		port = fmt.Sprintf("%d", globalConfig.Ports.Mailfetcher)
 	}
 	log.Printf("[StartServer] Mailfetcher listening on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
@@ -119,13 +122,8 @@ func fetchEmailsHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(msg))
 		return
 	}
-	cfg, err := config.LoadConfig("config.yaml")
-	if err != nil {
-		log.Printf("[fetchEmailsHandler] Ошибка загрузки конфига: %v", err)
-		http.Error(w, "Config error: "+err.Error(), 500)
-		return
-	}
-	added, err := FetchAndSave(cfg)
+
+	added, err := FetchAndSave(globalConfig)
 	if err != nil {
 		log.Printf("[fetchEmailsHandler] Ошибка FetchAndSave: %v", err)
 		http.Error(w, err.Error(), 500)

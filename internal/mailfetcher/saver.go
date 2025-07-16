@@ -12,12 +12,12 @@ import (
 	"os"
 	"receiptAnalyzer/internal/config"
 	"receiptAnalyzer/internal/storage"
-	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/emersion/go-imap"
+	"github.com/emersion/go-imap/client"
+	"github.com/emersion/go-sasl"
 	"github.com/jhillyerd/enmime"
 )
 
@@ -74,8 +74,8 @@ func appendHash(h string) {
 // таблицы для чеков. Возвращает интерфейс Storage, который используется в коде
 // выше по уровню для записи чеков.
 func InitializeStorage(cfg *config.Config) (storage.Storage, error) {
-	log.Printf("Инициализируем хранилище SQLite: %s", cfg.Storage.DBPath)
-	return storage.NewSQLiteStorage(cfg.Storage.DBPath)
+	log.Printf("Инициализируем хранилище SQLite: %s", cfg.Paths.DBPath)
+	return storage.NewSQLiteStorage(cfg.Paths.DBPath)
 }
 
 // Удаляю устаревшую функцию SaveMessages и все старые вызовы saveEmailHTML
@@ -87,28 +87,6 @@ func sanitizeString(s string) string {
 	s = repl.Replace(s)
 	s = strings.ReplaceAll(s, " ", "_")
 	return s
-}
-
-// getMaxUIDForMailbox возвращает максимальный UID для папки по именам файлов в htmlDir
-func getMaxUIDForMailbox(htmlDir, mailbox string) int {
-	files, err := os.ReadDir(htmlDir)
-	if err != nil {
-		return 0
-	}
-	re := regexp.MustCompile("^" + regexp.QuoteMeta(sanitizeString(mailbox)) + "_([0-9]+)_")
-	maxUID := 0
-	for _, f := range files {
-		if f.IsDir() || !strings.HasSuffix(f.Name(), ".html") {
-			continue
-		}
-		matches := re.FindStringSubmatch(f.Name())
-		if len(matches) == 2 {
-			if uid, err := strconv.Atoi(matches[1]); err == nil && uid > maxUID {
-				maxUID = uid
-			}
-		}
-	}
-	return maxUID
 }
 
 // existsFileWithHash проверяет, есть ли файл с данным хэшем в htmlDir
@@ -125,26 +103,48 @@ func existsFileWithHash(htmlDir, hash string) bool {
 	return false
 }
 
-// saveEmailHTML сохраняет письмо с именем <ПАПКА>_<UID>_<дата>_<отправитель>_<тема>_<ХЭШ>.html
+// saveEmailHTML сохраняет письмо с именем <ПАПКА>_<UID>_<ХЭШ>.html, дата, тема и отправитель добавляются внутрь файла
 func saveEmailHTML(mboxName string, uid uint32, sender, subject string, date time.Time, body []byte, htmlDir string) {
 	h := sha256.Sum256(body)
 	hashStr := hex.EncodeToString(h[:])
-	dateStr := date.Format("20060102_150405")
-	fname := fmt.Sprintf("%s/%s_%d_%s_%s_%s_%s.html", htmlDir, sanitizeString(mboxName), uid, dateStr, sanitizeString(sender), sanitizeString(subject), hashStr)
+	fname := fmt.Sprintf("%s/%s_%d_%s.html", htmlDir, sanitizeString(mboxName), uid, hashStr)
 	if existsFileWithHash(htmlDir, hashStr) {
 		log.Printf("[DETAIL] Пропущено письмо: Папка=%s UID=%d Отправитель=%s Тема=%s Хэш=%s (уже сохранено)", mboxName, uid, sender, subject, hashStr)
 		return
 	}
-	if err := os.WriteFile(fname, body, 0o644); err != nil {
-		log.Printf("[DETAIL] Ошибка при сохранении письма: Папка=%s UID=%d Отправитель=%s Тема=%s Хэш=%s Файл=%s Ошибка=%v", mboxName, uid, sender, subject, hashStr, fname, err)
+	// Формируем HTML с датой, темой и отправителем
+	metaBlock := fmt.Sprintf("<div><b>Дата:</b> %s<br><b>Тема:</b> %s<br><b>Отправитель:</b> %s</div>\n", html.EscapeString(date.Format("2006-01-02 15:04:05")), html.EscapeString(subject), html.EscapeString(sender))
+	fullBody := append([]byte(metaBlock), body...)
+	if err := os.WriteFile(fname, fullBody, 0o644); err != nil {
+		log.Printf("[DETAIL] Ошибка при сохранении письма: Папка=%s UID=%d Отправитель=%s Тема=%s Файл=%s Ошибка=%v", mboxName, uid, sender, subject, fname, err)
 		return
 	}
-	log.Printf("[DETAIL] Сохранено письмо: Папка=%s UID=%d Отправитель=%s Тема=%s Хэш=%s Файл=%s", mboxName, uid, sender, subject, hashStr, fname)
+	log.Printf("Папка %s UID=%d: письмо сохранено в %s (отправитель: %s, тема: %s)", mboxName, uid, fname, sender, subject)
+}
+
+// ConnectToEmail устанавливает TLS-соединение с IMAP-сервером и проходит аутентификацию.
+// Возвращает готовый к работе клиент или ошибку.
+func ConnectToEmail(cfg *config.Config) (*client.Client, error) {
+	log.Printf("Подключаемся к IMAP-серверу %s", cfg.Email.IMAPServer)
+	c, err := client.DialTLS(cfg.Email.IMAPServer, nil)
+	if err != nil {
+		return nil, err
+	}
+	// c.SetDebug(os.Stdout) // ОТКЛЮЧЕНО: IMAP debug-режим
+
+	log.Printf("Соединение установлено. Аутентифицируемся как %s", cfg.Email.Username)
+	auth := sasl.NewPlainClient("", cfg.Email.Username, cfg.Email.OAuthToken)
+	if err := c.Authenticate(auth); err != nil {
+		_ = c.Logout()
+		return nil, err
+	}
+	log.Println("Аутентификация успешна")
+	return c, nil
 }
 
 // FetchAndSave скачивает все письма из всех папок и сохраняет их в HTML с уникальным хэшем
 func FetchAndSave(cfg *config.Config) (int, error) {
-	htmlDir := cfg.Paths.HTMLDir
+	htmlDir := cfg.Paths.HTMLDirPath
 	os.MkdirAll(htmlDir, 0755)
 	log.Println("=== Начало выгрузки писем ===")
 	c, err := ConnectToEmail(cfg)
@@ -156,9 +156,14 @@ func FetchAndSave(cfg *config.Config) (int, error) {
 	done := make(chan error, 1)
 	go func() { done <- c.List("", "*", mailboxes) }()
 
-	// Сначала собираем все папки в слайс
+	// Сначала собираем все папки в слайс, только уникальные
 	mailboxesList := []*imap.MailboxInfo{}
+	seenMailboxes := make(map[string]struct{})
 	for m := range mailboxes {
+		if _, exists := seenMailboxes[m.Name]; exists {
+			continue
+		}
+		seenMailboxes[m.Name] = struct{}{}
 		mailboxesList = append(mailboxesList, m)
 	}
 	if err := <-done; err != nil {
@@ -166,6 +171,9 @@ func FetchAndSave(cfg *config.Config) (int, error) {
 	}
 
 	doProcess := func(name string) bool {
+		if len(cfg.MailboxPrefixes) == 0 {
+			return true // если не задано ни одного префикса, обрабатываем все папки
+		}
 		for _, prefix := range cfg.MailboxPrefixes {
 			if name == prefix || (len(prefix) > 0 && len(name) >= len(prefix) && name[:len(prefix)] == prefix) {
 				return true
@@ -174,7 +182,6 @@ func FetchAndSave(cfg *config.Config) (int, error) {
 		return false
 	}
 	totalNew, totalSkipped, totalErr := 0, 0, 0
-	searchKeywords := []string{"чек", "ЧЕК", "Чек"} // можно добавить больше вариантов
 	for _, m := range mailboxesList {
 		mboxIMAPName := m.Name
 		if !doProcess(mboxIMAPName) {
@@ -190,9 +197,10 @@ func FetchAndSave(cfg *config.Config) (int, error) {
 			totalErr++
 			continue
 		}
-		// SEARCH по ключевым словам (чек, ЧЕК, Чек)
 		criteria := imap.NewSearchCriteria()
-		criteria.Text = searchKeywords
+		if len(cfg.SearchKeywords) > 0 {
+			criteria.Text = cfg.SearchKeywords
+		}
 		uids, err := c.Search(criteria)
 		if err != nil {
 			log.Printf("[DETAIL] SEARCH в папке %s завершился ошибкой: %v", mboxIMAPName, err)
@@ -242,14 +250,15 @@ func FetchAndSave(cfg *config.Config) (int, error) {
 					skipCount++
 					continue
 				}
-				dateStr := msg.Envelope.Date.Format("20060102_150405")
-				fname := fmt.Sprintf("%s/%s_%d_%s_%s_%s_%s.html", htmlDir, sanitizeString(mboxIMAPName), msg.Uid, dateStr, sanitizeString(sender), sanitizeString(subject), hashStr)
-				if err := os.WriteFile(fname, rawMsg, 0o644); err != nil {
+				fname := fmt.Sprintf("%s/%s_%d_%s.html", htmlDir, sanitizeString(mboxIMAPName), msg.Uid, hashStr)
+				metaBlock := fmt.Sprintf("<div><b>Дата:</b> %s<br><b>Тема:</b> %s<br><b>Отправитель:</b> %s</div>\n", html.EscapeString(msg.Envelope.Date.Format("2006-01-02 15:04:05")), html.EscapeString(subject), html.EscapeString(sender))
+				fullBody := append([]byte(metaBlock), rawMsg...)
+				if err := os.WriteFile(fname, fullBody, 0o644); err != nil {
 					log.Printf("Папка %s UID=%d: ошибка при сохранении письма: %v", mboxIMAPName, msg.Uid, err)
 					errCount++
 					continue
 				}
-				log.Printf("Папка %s UID=%d: письмо сохранено в %s (хэш %s, MIME error: %v)", mboxIMAPName, msg.Uid, fname, hashStr, err)
+				log.Printf("Папка %s UID=%d: письмо сохранено в %s (отправитель: %s, тема: %s, MIME error: %v)", mboxIMAPName, msg.Uid, fname, sender, subject, err)
 				newCount++
 				continue
 			}
@@ -264,6 +273,36 @@ func FetchAndSave(cfg *config.Config) (int, error) {
 				skipCount++
 				continue
 			}
+			// Фильтрация по ключевым словам в htmlBody (только отдельные слова, без регулярок)
+			containsKeyword := false
+			textToSearch := strings.ToLower(string(htmlBody))
+			// Оставляем только буквы, цифры и пробелы
+			cleaned := make([]rune, 0, len(textToSearch))
+			for _, r := range textToSearch {
+				if (r >= 'a' && r <= 'z') || (r >= 'а' && r <= 'я') || (r >= '0' && r <= '9') || r == 'ё' || r == ' ' {
+					cleaned = append(cleaned, r)
+				} else {
+					cleaned = append(cleaned, ' ')
+				}
+			}
+			words := strings.Fields(string(cleaned))
+			for _, kw := range cfg.SearchKeywords {
+				kwLower := strings.ToLower(kw)
+				for _, w := range words {
+					if w == kwLower {
+						containsKeyword = true
+						break
+					}
+				}
+				if containsKeyword {
+					break
+				}
+			}
+			if !containsKeyword {
+				log.Printf("Папка %s UID=%d: письмо пропущено — не найдено ключевых слов (отправитель: %s, тема: %s)", mboxIMAPName, msg.Uid, sender, subject)
+				skipCount++
+				continue
+			}
 			h := sha256.Sum256(htmlBody)
 			hashStr := hex.EncodeToString(h[:])
 			if existsFileWithHash(htmlDir, hashStr) {
@@ -271,14 +310,15 @@ func FetchAndSave(cfg *config.Config) (int, error) {
 				skipCount++
 				continue
 			}
-			dateStr := msg.Envelope.Date.Format("20060102_150405")
-			fname := fmt.Sprintf("%s/%s_%d_%s_%s_%s_%s.html", htmlDir, sanitizeString(mboxIMAPName), msg.Uid, dateStr, sanitizeString(sender), sanitizeString(subject), hashStr)
-			if err := os.WriteFile(fname, htmlBody, 0o644); err != nil {
+			fname := fmt.Sprintf("%s/%s_%d_%s.html", htmlDir, sanitizeString(mboxIMAPName), msg.Uid, hashStr)
+			metaBlock := fmt.Sprintf("<div><b>Дата:</b> %s<br><b>Тема:</b> %s<br><b>Отправитель:</b> %s</div>\n", html.EscapeString(msg.Envelope.Date.Format("2006-01-02 15:04:05")), html.EscapeString(subject), html.EscapeString(sender))
+			fullBody := append([]byte(metaBlock), htmlBody...)
+			if err := os.WriteFile(fname, fullBody, 0o644); err != nil {
 				log.Printf("Папка %s UID=%d: ошибка при сохранении письма: %v (отправитель: %s, тема: %s)", mboxIMAPName, msg.Uid, err, sender, subject)
 				errCount++
 				continue
 			}
-			log.Printf("Папка %s UID=%d: письмо сохранено в %s (хэш %s, отправитель: %s, тема: %s)", mboxIMAPName, msg.Uid, fname, hashStr, sender, subject)
+			log.Printf("Папка %s UID=%d: письмо сохранено в %s (отправитель: %s, тема: %s)", mboxIMAPName, msg.Uid, fname, sender, subject)
 			newCount++
 		}
 		log.Printf("Папка %s: цикл по письмам завершён", mboxIMAPName)

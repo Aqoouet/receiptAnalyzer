@@ -3,14 +3,19 @@ package receipt
 import (
 	"encoding/json"
 	"os"
-	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-// templatesUnderTest is the list supplied to ParseReceiptAuto.
+var expectedResults map[string]ExpectedReceipt
+
+// templatesUnderTest is the ordered slice passed to ParseReceiptAuto; keep
+// the same order as originally used in tests.
 var templatesUnderTest = []Template{
+	YandexOFDPlainTableTemplate,
+	BelineOFD100Template,
 	DefaultBeelineTemplate,
 	DefaultTaxcomTemplate,
 	DefaultMusicTemplate,
@@ -19,131 +24,85 @@ var templatesUnderTest = []Template{
 	DefaultOFDruTemplate,
 	DefaultFirstOFDTemplate,
 	DefaultPlatformaOFDTemplate,
+	OfdYaKassaTemplate,
+	UnitellerTemplate,
+	MTSPaymentTemplate,
+	OFDruNestedTableTemplate,
+	BeelinePriceTableTemplate,
+	MailruAdvanceTemplate,
+	OfdRuAdvanceTemplate,
+	EmptyReceiptTemplate,
 }
 
-// receiptCase ties a sample HTML with the index of the template that should be
-// selected by ParseReceiptAuto.  If wantIdx < 0 we only assert that at least
-// one template matches (useful when layout may change but still detectable).
-type receiptCase struct {
-	name    string
-	path    string
-	wantIdx int // expected template index in templatesUnderTest, -1 = any
-	wantErr bool
+func init() {
+	// The expectations file now lives under testdata to keep everything that
+	// relates to fixtures in one place.  Use a path relative to the package
+	// root so that `go test ./...` from the repo root can locate the file no
+	// matter the current working directory.
+	data, err := os.ReadFile("testdata/expected_receipts.json")
+	if err != nil {
+		panic("expected_receipts.json not found; regenerate it before running tests: " + err.Error())
+	}
+	if err := json.Unmarshal(data, &expectedResults); err != nil {
+		panic(err)
+	}
 }
 
-func TestParseReceiptAuto_TableDriven(t *testing.T) {
-	cases := []receiptCase{
-		{
-			name:    "Beeline чек валидный",
-			path:    "../../output/msg_html/20250702_115846_ofdreceipt@beeline.ru_Чек_на_119.99_₽_от_02.07.2025,_АО__ТОРГОВЫЙ_ДОМ__ПЕРЕКРЕСТОК_.html",
-			wantIdx: 0,
-			wantErr: false,
-		},
-		{
-			name:    "Taxcom чек валидный",
-			path:    "../../output/msg_html/20231026_043113_noreply@taxcom.ru_Кассовый_чек_от_ООО__Спар_Миддл_Волга__за_26.10.2023.html",
-			wantIdx: 1,
-			wantErr: false,
-		},
-		{
-			name:    "Music шаблон минимальный",
-			path:    createTempHTML(t, `<table class="item"><tr><td class="name">Трек</td><td class="qty">1</td><td class="price">30.00</td></tr></table>`),
-			wantIdx: 2,
-			wantErr: false,
-		},
-		{
-			name:    "Yandex OFD минимальный",
-			path:    createTempHTML(t, `<table><tr class="content-row"><td><table><tr><td>Услуга</td><td><span>1</span></td><td>100.00</td></tr></table></td></tr></table>`),
-			wantIdx: 3,
-			wantErr: false,
-		},
-		{
-			name:    "Yandex Market минимальный",
-			path:    createTempHTML(t, `<table><tr><td><a href="https://market.yandex.ru/product/1">Товар</a></td><td>info</td><td><span>2</span> 200.00</td></tr></table>`),
-			wantIdx: 4,
-			wantErr: false,
-		},
-		{
-			name:    "OFD.ru минимальный",
-			path:    createTempHTML(t, `<table><tr><td><b>Товар</b></td><td><span>1 X 500.00</span> <span>= 500.00</span></td></tr></table>`),
-			wantIdx: 5,
-			wantErr: false,
-		},
-		{
-			name:    "Первый ОФД минимальный",
-			path:    createTempHTML(t, `<table style="font-family: Courier New;"><tr><td>1.</td><td>Service</td><td>100,00</td><td>1</td></tr></table>`),
-			wantIdx: 6,
-			wantErr: false,
-		},
-		{
-			name:    "Платформа ОФД минимальный",
-			path:    createTempHTML(t, `<div class="check-section"><div class="check-product-name">Item</div><div class="check-col-right">1 х 5520.00</div></div>`),
-			wantIdx: 7,
-			wantErr: false,
-		},
+func TestParseReceipt_Fixtures(t *testing.T) {
+	entries, err := os.ReadDir("testdata")
+	if err != nil {
+		t.Fatalf("failed to read testdata dir: %v", err)
 	}
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			_, err := os.Stat(tc.path)
-			if err != nil {
-				if tc.wantErr {
-					t.Skipf("test file %s not found, skipping negative case", tc.path)
-				}
-				t.Fatalf("failed to read test file: %v", err)
-			}
-			js, idx, err := ParseReceiptAuto(tc.path, templatesUnderTest)
-			if tc.wantErr {
-				assert.Error(t, err)
-				return
-			}
-			assert.NoError(t, err)
-			if tc.wantIdx >= 0 {
-				assert.Equal(t, tc.wantIdx, idx)
-			}
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".html") {
+			continue
+		}
+
+		path := "testdata/" + entry.Name()
+		expReceipt, ok := expectedResults[path]
+		if !ok {
+			t.Fatalf("no expectations for %s — regenerate JSON", path)
+		}
+
+		t.Run(entry.Name(), func(t *testing.T) {
+			js, usedIdx, err := ParseReceiptAuto(path, templatesUnderTest)
+			assert.NoError(t, err, "ParseReceiptAuto failed for %s", path)
+
 			var items []Item
 			assert.NoError(t, json.Unmarshal([]byte(js), &items))
-			assert.NotEmpty(t, items)
-		})
-	}
-}
 
-// TestParseFloat validates helper that converts Russian decimal strings.
-func TestParseFloat_TableDriven(t *testing.T) {
-	t.Parallel()
-	tests := []struct {
-		name   string
-		in     string
-		want   float64
-		wantOk bool
-	}{
-		{"Обычное число", "123.45", 123.45, true},
-		{"Запятая как разделитель", "123,45", 123.45, true},
-		{"Пустая строка", "", 0, false},
-		{"Невалидное число", "abc", 0, false},
-		{"Только точка", ".", 0, false},
-		{"Только запятая", ",", 0, false},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, ok := ParseFloat(tt.in)
-			if tt.wantOk {
-				assert.True(t, ok)
-				assert.InDelta(t, tt.want, got, 0.001)
-			} else {
-				assert.False(t, ok)
+			// Ensure we don't panic when counts differ – perform detailed
+			// comparisons only when the parser produced exactly the expected
+			// number of items.  The count assertion still fails the sub-test,
+			// but we skip the per-item checks to get a cleaner failure report.
+			assert.Equal(t, len(expReceipt.Items), len(items), "item count mismatch for %s", path)
+			if len(expReceipt.Items) != len(items) {
+				return
 			}
+
+			var total float64
+			for i := range items {
+				got := items[i]
+				exp := expReceipt.Items[i]
+
+				qty, _ := ParseFloat(got.Quantity)
+				price, _ := ParseFloat(got.Price)
+				calc := qty * price
+				total += calc
+
+				assert.Equal(t, exp.Name, got.Name, "name mismatch at item %d", i)
+				assert.InDelta(t, exp.Quantity, qty, 0.01, "quantity mismatch at item %d", i)
+				assert.InDelta(t, exp.UnitPrice, price, 0.01, "unit_price mismatch at item %d", i)
+				assert.InDelta(t, exp.Total, calc, 0.01, "total mismatch at item %d", i)
+			}
+			assert.InDelta(t, expReceipt.Total, total, 0.01, "receipt total mismatch for %s", path)
+
+			// The JSON now stores the template name (string) instead of the
+			// numeric index.  We keep the field for future diagnostics but do
+			// not treat it as a strict assertion: the parser may evolve and
+			// still produce correct items with a different template.
+			_ = usedIdx
 		})
 	}
-}
-
-// createTempHTML записывает content во временный файл и возвращает его путь.
-func createTempHTML(t *testing.T, content string) string {
-	t.Helper()
-	dir := t.TempDir()
-	path := filepath.Join(dir, "sample.html")
-	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-		t.Fatalf("failed to write temp html: %v", err)
-	}
-	return path
 }

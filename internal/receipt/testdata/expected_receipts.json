@@ -1,0 +1,652 @@
+{
+  "testdata/Receipts_00_yandex_ofd_yandex_ru_10_b6f1805c4663f728f5989b757e0bb83d93e7d79c8677dad7c0909942582bb584.html": {
+    "hash": "b6f1805c4663f728f5989b757e0bb83d93e7d79c8677dad7c0909942582bb584",
+    "sender": "no-reply@ofd.yandex.ru",
+    "subject": "Кассовый чек",
+    "date": "2021-08-27 08:10:29",
+    "total": 1129.96,
+    "template": "Receipts_00_yandex_ofd_yandex_ru",
+    "items": [
+      {
+        "name": "Запеканка творожная с вишней без добавления сахара",
+        "quantity": 1,
+        "unit_price": 158,
+        "total": 158
+      },
+      {
+        "name": "Сырники творожные (1.09)",
+        "quantity": 1,
+        "unit_price": 172.72,
+        "total": 172.72
+      },
+      {
+        "name": "Сосиски Венские копченые",
+        "quantity": 1,
+        "unit_price": 198,
+        "total": 198
+      },
+      {
+        "name": "Сардельки Из говядины по стандарту ВкусВилл (0.98)",
+        "quantity": 1,
+        "unit_price": 233.24,
+        "total": 233.24
+      },
+      {
+        "name": "Форель малосоленая филе-кусок",
+        "quantity": 1,
+        "unit_price": 330,
+        "total": 330
+      },
+      {
+        "name": "Изделие цельнозер. без муки Целебный с цикорием",
+        "quantity": 1,
+        "unit_price": 38,
+        "total": 38
+      }
+    ]
+  },
+  "testdata/Receipts_00_yandex_ofd_yandex_ru_11_4ba59d79d704ecaad4f08a1d1f79df2475c9e9fcc5576bd881c5a7e1b1cb4cbd.html": {
+    "hash": "4ba59d79d704ecaad4f08a1d1f79df2475c9e9fcc5576bd881c5a7e1b1cb4cbd",
+    "sender": "no-reply@ofd.yandex.ru",
+    "subject": "Кассовый чек",
+    "date": "2022-02-18 15:58:13",
+    "total": 1120,
+    "template": "Receipts_00_yandex_ofd_yandex_ru",
+    "items": [
+      {
+        "name": "Супермясная",
+        "quantity": 1,
+        "unit_price": 630,
+        "total": 630
+      },
+      {
+        "name": "Трюфельная Пепперони",
+        "quantity": 1,
+        "unit_price": 490,
+        "total": 490
+      }
+    ]
+  },
+  "testdata/Receipts_00_yandex_ofd_yandex_ru_12_1c5cd0685f6b40c46de2795edecddd366293d60d67011382b455405df8d0908a.html": {
+    "hash": "1c5cd0685f6b40c46de2795edecddd366293d60d67011382b455405df8d0908a",
+    "sender": "no-reply@ofd.yandex.ru",
+    "subject": "Кассовый чек",
+    "date": "2022-02-18 15:58:14",
+    "total": 114,
+    "template": "Receipts_00_yandex_ofd_yandex_ru",
+    "items": [
+      {
+        "name": "Доставка",
+        "quantity": 1,
+        "unit_price": 114,
+        "total": 114
+      }
+    ]
+  },
+  "testdata/Receipts_01_OTHER_1_ofd_10_fc10f2cb61468b6b75ee11590d2e47c6e978f4df5b95768b0d041205f8b4e031.html": {
+    "hash": "fc10f2cb61468b6b75ee11590d2e47c6e978f4df5b95768b0d041205f8b4e031",
+    "sender": "echeck@1-ofd.ru",
+    "subject": "🚀 Чек 27.07.2023 17:16 ООО \"Система ПБО\"",
+    "date": "2023-07-27 17:16:41",
+    "total": 533,
+    "template": "Receipts_01_OTHER_1_ofd",
+    "items": [
+      {
+        "name": "САНРАЙЗ СЛИВА СМОРОД",
+        "quantity": 1,
+        "unit_price": 129,
+        "total": 129
+      },
+      {
+        "name": "МОРОЖЕНОЕ ЧЕРНИЧНОЕ",
+        "quantity": 1,
+        "unit_price": 89,
+        "total": 89
+      },
+      {
+        "name": "ГРАНД ФРИ МАЛ",
+        "quantity": 1,
+        "unit_price": 65,
+        "total": 65
+      },
+      {
+        "name": "БИГ СПЕШИАЛ Акция",
+        "quantity": 1,
+        "unit_price": 249,
+        "total": 249
+      },
+      {
+        "name": "НАГГЕТСЫ 4 Акция",
+        "quantity": 1,
+        "unit_price": 1,
+        "total": 1
+      }
+    ]
+  },
+  "testdata/Receipts_01_OTHER_1_ofd_11_c56cd137f6a971d99bfbe408d7a8d3823bbdaefd99fd003dfa95cd4f7ff78233.html": {
+    "hash": "c56cd137f6a971d99bfbe408d7a8d3823bbdaefd99fd003dfa95cd4f7ff78233",
+    "sender": "echeck@1-ofd.ru",
+    "subject": "🚀 Чек 30.07.2023 13:16 ООО \"Система ПБО\"",
+    "date": "2023-07-30 13:16:22",
+    "total": 485,
+    "template": "Receipts_01_OTHER_1_ofd",
+    "items": [
+      {
+        "name": "ДВОЙ БИГ СПЕШ СКОМ",
+        "quantity": 1,
+        "unit_price": 360,
+        "total": 360
+      },
+      {
+        "name": "КАРТОФ ФРИ СРЕД СКОМ",
+        "quantity": 1,
+        "unit_price": 65,
+        "total": 65
+      },
+      {
+        "name": "СОК АПЕЛЬСИН СРЕД СКОМ",
+        "quantity": 1,
+        "unit_price": 59,
+        "total": 59
+      },
+      {
+        "name": "НАГГЕТСЫ 4 Акция",
+        "quantity": 1,
+        "unit_price": 1,
+        "total": 1
+      }
+    ]
+  },
+  "testdata/Receipts_01_OTHER_1_ofd_1_1ad91335d5b50ed589ef2162afdfb196b89d4892d71d90f2ccf43ecd5ffa151b.html": {
+    "hash": "1ad91335d5b50ed589ef2162afdfb196b89d4892d71d90f2ccf43ecd5ffa151b",
+    "sender": "echeck@1-ofd.ru",
+    "subject": "🚀 Чек 04.06.2023 12:15 ООО \"Система ПБО\"",
+    "date": "2023-06-04 12:24:32",
+    "total": 636,
+    "template": "Receipts_01_OTHER_1_ofd",
+    "items": [
+      {
+        "name": "МОРОЖЕНОЕ ЧЕРНИЧНОЕ",
+        "quantity": 1,
+        "unit_price": 89,
+        "total": 89
+      },
+      {
+        "name": "ГРАНД ФРИ МАЛ",
+        "quantity": 1,
+        "unit_price": 65,
+        "total": 65
+      },
+      {
+        "name": "СОУС СЫРН И КИСЛ-СЛАД",
+        "quantity": 1,
+        "unit_price": 69,
+        "total": 69
+      },
+      {
+        "name": "БИГ СПЕШИАЛ РОСТБИФ Акция",
+        "quantity": 1,
+        "unit_price": 279,
+        "total": 279
+      },
+      {
+        "name": "НАГГЕТСЫ 6 Акция",
+        "quantity": 1,
+        "unit_price": 65,
+        "total": 65
+      },
+      {
+        "name": "СОУС СЫРН И КИСЛ-СЛАД",
+        "quantity": 1,
+        "unit_price": 69,
+        "total": 69
+      }
+    ]
+  },
+  "testdata/Receipts_01_OTHER_OFD_100_d24ed732bd3ca5c2d61b5ce459049f958ea1a6e90ffa053c3c299d26115e6256.html": {
+    "hash": "d24ed732bd3ca5c2d61b5ce459049f958ea1a6e90ffa053c3c299d26115e6256",
+    "sender": "ofdreceipt@beeline.ru",
+    "subject": "Чек на 1722.92 ₽ от 10.05.2025, ООО \"ИКС 5 ДИДЖИТАЛ\"",
+    "date": "2025-05-10 12:27:53",
+    "total": 1722.92,
+    "template": "Receipts_01_OTHER_OFD",
+    "items": [
+      {
+        "name": "Рулет Черемушки Майский с маком и изюмом 300г",
+        "quantity": 1,
+        "unit_price": 139.99,
+        "total": 139.99
+      },
+      {
+        "name": "Томаты Розовые отборные Азербайджан",
+        "quantity": 0.58,
+        "unit_price": 299.99,
+        "total": 173.99
+      },
+      {
+        "name": "Форель Fish House слабосоленая филе-кусок 200г",
+        "quantity": 1,
+        "unit_price": 419.99,
+        "total": 419.99
+      },
+      {
+        "name": "[М+] Кефир Станция Молочная 3.2% БЗМЖ 930г",
+        "quantity": 1,
+        "unit_price": 94.99,
+        "total": 94.99
+      },
+      {
+        "name": "Азу из индейки Рестория 500г",
+        "quantity": 1,
+        "unit_price": 249.99,
+        "total": 249.99
+      },
+      {
+        "name": "Минтай Borealis филе блочное без кожи без костей 400г",
+        "quantity": 1,
+        "unit_price": 339.99,
+        "total": 339.99
+      },
+      {
+        "name": "[М+] Творог Брест-Литовск 9% БЗМЖ 300г",
+        "quantity": 1,
+        "unit_price": 129.99,
+        "total": 129.99
+      },
+      {
+        "name": "Яйца Вкус & Польза перепелиные пищевые столовые 20шт.",
+        "quantity": 1,
+        "unit_price": 134.99,
+        "total": 134.99
+      },
+      {
+        "name": "Доставка, сборка и упаковка",
+        "quantity": 1,
+        "unit_price": 39,
+        "total": 39
+      }
+    ]
+  },
+  "testdata/Receipts_01_OTHER_OFD_101_79be5c9c64142c04708237b20205170eb75d8e7689170fa044c7941138feb02a.html": {
+    "hash": "79be5c9c64142c04708237b20205170eb75d8e7689170fa044c7941138feb02a",
+    "sender": "ofdreceipt@beeline.ru",
+    "subject": "Чек на 2119.71 ₽ от 11.05.2025, АО \"ТОРГОВЫЙ ДОМ \"ПЕРЕКРЕСТОК\"",
+    "date": "2025-05-11 18:34:33",
+    "total": 2119.71,
+    "template": "Receipts_01_OTHER_OFD",
+    "items": [
+      {
+        "name": "М.FR.Голубика МАРОККО 250г",
+        "quantity": 2,
+        "unit_price": 359.99,
+        "total": 719.98
+      },
+      {
+        "name": "Томаты ФЛАМЕНКО сливовид.кр.1кг",
+        "quantity": 1.354,
+        "unit_price": 299.99,
+        "total": 406.19
+      },
+      {
+        "name": "Кабачки                     1кг",
+        "quantity": 0.794,
+        "unit_price": 219.99,
+        "total": 174.67
+      },
+      {
+        "name": "GUT.Сыр ПАРМ.GR.PAD.H.40% 1кг",
+        "quantity": 0.1,
+        "unit_price": 2699,
+        "total": 269.9
+      },
+      {
+        "name": "CHIKAL.Шоколад молоч.кешью 100г",
+        "quantity": 1,
+        "unit_price": 219.99,
+        "total": 219.99
+      },
+      {
+        "name": "KOP.Карамель COF.CANDY лед.108г",
+        "quantity": 2,
+        "unit_price": 119.99,
+        "total": 239.98
+      },
+      {
+        "name": "СПК Кофе Nestle Американо 200мл",
+        "quantity": 1,
+        "unit_price": 89,
+        "total": 89
+      }
+    ]
+  },
+  "testdata/Receipts_01_OTHER_OFD_102_48d9f95373d150b44fcc1979b6eada7ef6e24cabbd0b769f74b52cd5cffc01fd.html": {
+    "hash": "48d9f95373d150b44fcc1979b6eada7ef6e24cabbd0b769f74b52cd5cffc01fd",
+    "sender": "ofdreceipt@beeline.ru",
+    "subject": "Чек на 104.99 ₽ от 03.06.2025, АО \"ТОРГОВЫЙ ДОМ \"ПЕРЕКРЕСТОК\"",
+    "date": "2025-06-05 01:25:25",
+    "total": 104.99,
+    "template": "Receipts_01_OTHER_OFD",
+    "items": [
+      {
+        "name": "МАМА Лапша тайс.вк.жел.кар.90г",
+        "quantity": 1,
+        "unit_price": 104.99,
+        "total": 104.99
+      }
+    ]
+  },
+  "testdata/Receipts_01_OTHER_Platforma_OFD_10_3648f947d7009351e9612cfb3d731e2d7de835b7885b11c9f8725ba6ef9d0baf.html": {
+    "hash": "3648f947d7009351e9612cfb3d731e2d7de835b7885b11c9f8725ba6ef9d0baf",
+    "sender": "noreply@chek.pofd.ru",
+    "subject": "Электронный чек Платформа ОФД",
+    "date": "2020-11-23 17:06:04",
+    "total": 1854.45,
+    "template": "Receipts_01_OTHER_Platforma_OFD",
+    "items": [
+      {
+        "name": "Kettle Redmond skykettle supplier, dark gray",
+        "quantity": 1,
+        "unit_price": 1854.45,
+        "total": 1854.45
+      }
+    ]
+  },
+  "testdata/Receipts_01_OTHER_Platforma_OFD_11_0c08bbcd338239cfb6e71499f0b06daf8701d0947d568ef4797a676b3b14eeb4.html": {
+    "hash": "0c08bbcd338239cfb6e71499f0b06daf8701d0947d568ef4797a676b3b14eeb4",
+    "sender": "noreply@chek.pofd.ru",
+    "subject": "Электронный чек Платформа ОФД",
+    "date": "2020-11-24 19:57:20",
+    "total": 18989.5,
+    "template": "Receipts_01_OTHER_Platforma_OFD",
+    "items": [
+      {
+        "name": "Smartphone Xiaomi POCO X3 NFC 6 + 128,POCO X3 NFC,Redmi,mi,phone,mobile,Cell phone,telephone,mobile phone,mobilephone,pocox3,poc",
+        "quantity": 1,
+        "unit_price": 18989.5,
+        "total": 18989.5
+      }
+    ]
+  },
+  "testdata/Receipts_01_OTHER_Platforma_OFD_12_f7add1bf7a3e317987d607fa99a1f5591d74acfeed0dced0b96265c379c1c13d.html": {
+    "hash": "f7add1bf7a3e317987d607fa99a1f5591d74acfeed0dced0b96265c379c1c13d",
+    "sender": "noreply@chek.pofd.ru",
+    "subject": "Электронный чек Платформа ОФД",
+    "date": "2020-11-25 21:11:49",
+    "total": 1854.45,
+    "template": "Receipts_01_OTHER_Platforma_OFD",
+    "items": [
+      {
+        "name": "Kettle Redmond skykettle supplier, dark gray",
+        "quantity": 1,
+        "unit_price": 1854.45,
+        "total": 1854.45
+      }
+    ]
+  },
+  "testdata/Receipts_01_OTHER_ofd_ru_11_2fc2888a4a82a3faebad601ed04edb6e99a57d2e40a973dd21989e7ffdd070be.html": {
+    "hash": "2fc2888a4a82a3faebad601ed04edb6e99a57d2e40a973dd21989e7ffdd070be",
+    "sender": "noreply@ofd.ru",
+    "subject": "Кассовый чек 33 ₽ от «ГУП \"Московский метрополитен\"»",
+    "date": "2021-10-15 17:16:45",
+    "total": 33,
+    "template": "Receipts_01_OTHER_ofd_ru",
+    "items": [
+      {
+        "name": "Услуга, перевозка пассажиров и багажа",
+        "quantity": 1,
+        "unit_price": 33,
+        "total": 33
+      }
+    ]
+  },
+  "testdata/Receipts_01_OTHER_ofd_ru_1_014b6ca9a25fda62cdcbbc414edd21cc7a510b49ec7bf4f2f7481065051d2ac1.html": {
+    "hash": "014b6ca9a25fda62cdcbbc414edd21cc7a510b49ec7bf4f2f7481065051d2ac1",
+    "sender": "noreply@ofd.ru",
+    "subject": "Кассовый чек 1300 ₽ от «ООО \"ЛГ СПОРТ ПРОДЖЕКТС\"»",
+    "date": "2020-08-14 10:39:15",
+    "total": 1300,
+    "template": "Receipts_01_OTHER_ofd_ru",
+    "items": [
+      {
+        "name": "L  tape Moscow by Tour de France. SPORT 45 KM. Москва, 05.09.2020",
+        "quantity": 1,
+        "unit_price": 1100,
+        "total": 1100
+      },
+      {
+        "name": "L  tape Moscow by Tour de France. Страховка. Москва",
+        "quantity": 1,
+        "unit_price": 200,
+        "total": 200
+      }
+    ]
+  },
+  "testdata/Receipts_01_OTHER_taxcom_100_dea4870477d52cb2eb6a024736a8379ad9558095b29d37457d74d99c5af007c7.html": {
+    "hash": "dea4870477d52cb2eb6a024736a8379ad9558095b29d37457d74d99c5af007c7",
+    "sender": "noreply@taxcom.ru",
+    "subject": "Кассовый чек от ООО \"ВУШ\" за 11.08.2023",
+    "date": "2023-08-11 04:15:20",
+    "total": 288,
+    "template": "Receipts_01_OTHER_taxcom",
+    "items": [
+      {
+        "name": "Начало поездки с Whoosh",
+        "quantity": 1,
+        "unit_price": 0,
+        "total": 0
+      },
+      {
+        "name": "Поминутный тариф Whoosh; арендная плата",
+        "quantity": 36,
+        "unit_price": 2.4,
+        "total": 86.4
+      },
+      {
+        "name": "Поминутный тариф Whoosh; лицензионное вознаграждение",
+        "quantity": 36,
+        "unit_price": 5.6,
+        "total": 201.6
+      }
+    ]
+  },
+  "testdata/Receipts_01_OTHER_taxcom_101_356757428256d1f9b038b6c7dbf6d8044d3cb283b52493d4abb8510aead85fb9.html": {
+    "hash": "356757428256d1f9b038b6c7dbf6d8044d3cb283b52493d4abb8510aead85fb9",
+    "sender": "noreply@taxcom.ru",
+    "subject": "Кассовый чек от ООО \"ВУШ\" за 08.07.2024",
+    "date": "2024-07-08 14:28:17",
+    "total": 48.5,
+    "template": "Receipts_01_OTHER_taxcom",
+    "items": [
+      {
+        "name": "Поминутный тариф Whoosh; лицензионное вознаграждение",
+        "quantity": 1,
+        "unit_price": 34,
+        "total": 34
+      },
+      {
+        "name": "Поминутный тариф Whoosh; арендная плата",
+        "quantity": 1,
+        "unit_price": 14.5,
+        "total": 14.5
+      },
+      {
+        "name": "Начало поездки с Whoosh; Лицензионное вознаграждение",
+        "quantity": 1,
+        "unit_price": 0,
+        "total": 0
+      }
+    ]
+  },
+  "testdata/Receipts_01_OTHER_taxcom_102_a4ad75bf5f32b13fafaf25f3a83dace8d7ed923fb46756d36542b31fb8bc2916.html": {
+    "hash": "a4ad75bf5f32b13fafaf25f3a83dace8d7ed923fb46756d36542b31fb8bc2916",
+    "sender": "noreply@taxcom.ru",
+    "subject": "Кассовый чек от ООО \"ВУШ\" за 08.07.2024",
+    "date": "2024-07-08 15:16:45",
+    "total": 38.4,
+    "template": "Receipts_01_OTHER_taxcom",
+    "items": [
+      {
+        "name": "Начало поездки с Whoosh; Лицензионное вознаграждение",
+        "quantity": 1,
+        "unit_price": 0,
+        "total": 0
+      },
+      {
+        "name": "Поминутный тариф Whoosh; лицензионное вознаграждение",
+        "quantity": 1,
+        "unit_price": 26.8,
+        "total": 26.8
+      },
+      {
+        "name": "Поминутный тариф Whoosh; арендная плата",
+        "quantity": 1,
+        "unit_price": 11.6,
+        "total": 11.6
+      }
+    ]
+  },
+  "testdata/Receipts_02_SUBSCRIPTION_MTC_10_796c9d702cbd56cc4bf0e91788fb82a81eb05342dc8c6e70ae9cac7dfd47b283.html": {
+    "hash": "796c9d702cbd56cc4bf0e91788fb82a81eb05342dc8c6e70ae9cac7dfd47b283",
+    "sender": "receipt@mts.ru",
+    "subject": "Информация о кассовом чеке",
+    "date": "2024-09-15 11:35:21",
+    "total": 520,
+    "template": "Receipts_02_SUBSCRIPTION_MTC",
+    "items": [
+      {
+        "name": "Оплата услуг МТС",
+        "quantity": 1,
+        "unit_price": 520,
+        "total": 520
+      }
+    ]
+  },
+  "testdata/Receipts_02_SUBSCRIPTION_MTC_11_a5dedaa1ea53ac7a3f61ffd2b3e4b718caf44f1de76b220c1e4ef02779fe6f35.html": {
+    "hash": "a5dedaa1ea53ac7a3f61ffd2b3e4b718caf44f1de76b220c1e4ef02779fe6f35",
+    "sender": "receipt@mts.ru",
+    "subject": "Информация о кассовом чеке",
+    "date": "2024-10-15 11:27:47",
+    "total": 520,
+    "template": "Receipts_02_SUBSCRIPTION_MTC",
+    "items": [
+      {
+        "name": "Оплата услуг МТС",
+        "quantity": 1,
+        "unit_price": 520,
+        "total": 520
+      }
+    ]
+  },
+  "testdata/Receipts_02_SUBSCRIPTION_MTC_1_0620870c6affcf31a96dbfccc80068e2e58ddb3aa6ed0058b4800d61aa3b2b71.html": {
+    "hash": "0620870c6affcf31a96dbfccc80068e2e58ddb3aa6ed0058b4800d61aa3b2b71",
+    "sender": "receipt@mts.ru",
+    "subject": "Информация о кассовом чеке",
+    "date": "2023-12-28 20:41:58",
+    "total": 2000,
+    "template": "Receipts_02_SUBSCRIPTION_MTC",
+    "items": [
+      {
+        "name": "Оплата услуг МТС",
+        "quantity": 1,
+        "unit_price": 2000,
+        "total": 2000
+      }
+    ]
+  },
+  "testdata/Receipts_02_SUBSCRIPTION_Uniteller_10_1f71cc9439f3ffc24ccb531cdeb77154a52e0a6cf03dcff246c023e3bb53cb1b.html": {
+    "hash": "1f71cc9439f3ffc24ccb531cdeb77154a52e0a6cf03dcff246c023e3bb53cb1b",
+    "sender": "check@uniteller.ru",
+    "subject": "Фискальный чек по заказу",
+    "date": "2024-06-20 07:47:32",
+    "total": 45,
+    "template": "Receipts_02_SUBSCRIPTION_Uniteller",
+    "items": [
+      {
+        "name": "Аренда велосипеда 9 м.",
+        "quantity": 1,
+        "unit_price": 45,
+        "total": 45
+      }
+    ]
+  },
+  "testdata/Receipts_02_SUBSCRIPTION_Uniteller_11_90099ae9092887aff2a17bd1129f9650fef8ba413fb9b1839b8259f3e4c5ce69.html": {
+    "hash": "90099ae9092887aff2a17bd1129f9650fef8ba413fb9b1839b8259f3e4c5ce69",
+    "sender": "check@uniteller.ru",
+    "subject": "Фискальный чек по заказу",
+    "date": "2024-07-02 16:40:42",
+    "total": 35,
+    "template": "Receipts_02_SUBSCRIPTION_Uniteller",
+    "items": [
+      {
+        "name": "Аренда велосипеда 7 м.",
+        "quantity": 1,
+        "unit_price": 35,
+        "total": 35
+      }
+    ]
+  },
+  "testdata/Receipts_02_SUBSCRIPTION_Uniteller_12_9ef3ff5fb991b195790179f4686ddcc90adc89d6bfa200005d7af164981890ff.html": {
+    "hash": "9ef3ff5fb991b195790179f4686ddcc90adc89d6bfa200005d7af164981890ff",
+    "sender": "check@uniteller.ru",
+    "subject": "Фискальный чек по заказу",
+    "date": "2024-07-03 16:39:06",
+    "total": 35,
+    "template": "Receipts_02_SUBSCRIPTION_Uniteller",
+    "items": [
+      {
+        "name": "Аренда велосипеда 7 м.",
+        "quantity": 1,
+        "unit_price": 35,
+        "total": 35
+      }
+    ]
+  },
+  "testdata/Receipts_02_SUBSCRIPTION_ofd_ya_kassa_10_115c82378d6742190225a476c949374f10928afba1a22e8da09b60896a0d2425.html": {
+    "hash": "115c82378d6742190225a476c949374f10928afba1a22e8da09b60896a0d2425",
+    "sender": "no-reply@ofd-ya-kassa.ru",
+    "subject": "Кассовый чек № 68346 от 16-11-2024 15:12 ООО \"НАЦИОНАЛЬНЫЙ СПОРТИВНЫЙ ТЕЛЕКАНАЛ\"",
+    "date": "2024-11-16 12:10:31",
+    "total": 299,
+    "template": "Receipts_02_SUBSCRIPTION_ofd_ya_kassa",
+    "items": [
+      {
+        "name": "МАТЧ ПРЕМЬЕР на 1 месяц",
+        "quantity": 1,
+        "unit_price": 299,
+        "total": 299
+      }
+    ]
+  },
+  "testdata/Receipts_02_SUBSCRIPTION_ofd_ya_kassa_11_ef9973747e924767b7a1f558d5fa139bffc699650acd528a1ea34d7a2d7cc047.html": {
+    "hash": "ef9973747e924767b7a1f558d5fa139bffc699650acd528a1ea34d7a2d7cc047",
+    "sender": "no-reply@ofd-ya-kassa.ru",
+    "subject": "Кассовый чек № 39797 от 16-12-2024 15:05 ООО \"НАЦИОНАЛЬНЫЙ СПОРТИВНЫЙ ТЕЛЕКАНАЛ\"",
+    "date": "2024-12-16 12:03:11",
+    "total": 299,
+    "template": "Receipts_02_SUBSCRIPTION_ofd_ya_kassa",
+    "items": [
+      {
+        "name": "МАТЧ ПРЕМЬЕР на 1 месяц",
+        "quantity": 1,
+        "unit_price": 299,
+        "total": 299
+      }
+    ]
+  },
+  "testdata/Receipts_02_SUBSCRIPTION_ofd_ya_kassa_12_1e21a352eaaee3b847baf2b146949d9181256ea74d45c2cf5d493a2d4ee6dd98.html": {
+    "hash": "1e21a352eaaee3b847baf2b146949d9181256ea74d45c2cf5d493a2d4ee6dd98",
+    "sender": "no-reply@ofd-ya-kassa.ru",
+    "subject": "Кассовый чек № 42990 от 15-01-2025 15:05 ООО \"НАЦИОНАЛЬНЫЙ СПОРТИВНЫЙ ТЕЛЕКАНАЛ\"",
+    "date": "2025-01-15 12:02:53",
+    "total": 299,
+    "template": "Receipts_02_SUBSCRIPTION_ofd_ya_kassa",
+    "items": [
+      {
+        "name": "МАТЧ ПРЕМЬЕР на 1 месяц",
+        "quantity": 1,
+        "unit_price": 299,
+        "total": 299
+      }
+    ]
+  }
+}

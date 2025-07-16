@@ -23,22 +23,62 @@ import (
 // Возвращает количество успешно импортированных чеков и количество пропущенных файлов.
 // Файл считается уже импортированным, если в таблице существует запись с таким id.
 func ImportSavedHTML(store storage.Storage, htmlDir string) (int, int, error) {
+	log.Printf("[ImportSavedHTML] Начинаем импорт из директории: %s", htmlDir)
+	absHtmlDir, err := filepath.Abs(htmlDir)
+	if err != nil {
+		absHtmlDir = htmlDir
+	}
 	files, err := ioutil.ReadDir(htmlDir)
 	if err != nil {
 		return 0, 0, fmt.Errorf("каталог %s недоступен: %w", htmlDir, err)
 	}
 
+	log.Printf("[ImportSavedHTML] Найдено файлов: %d", len(files))
 	imported := 0
 	skipped := 0
 	for _, f := range files {
 		if f.IsDir() || !strings.HasSuffix(f.Name(), ".html") {
+			log.Printf("[ImportSavedHTML] Пропускаем файл (не .html): %s", f.Name())
 			continue
 		}
-		log.Printf("Обработка файла %s", f.Name())
-		id := f.Name()
+		log.Printf("[ImportSavedHTML] Обрабатываем файл: %s", f.Name())
+
+		// --- вычисляем hash файла ---
+		filePath := filepath.Join(htmlDir, f.Name())
+		hashFull := strings.TrimSuffix(f.Name(), ".html")
+		folder, receiptID, hash := splitHashParts(hashFull)
+		log.Printf("[ImportSavedHTML] Парсинг имени файла: folder='%s', receiptID='%s', hash='%s'", folder, receiptID, hash)
+
+		sender, subject, dt := extractMetaFromHTML(filePath)
+		if dt.IsZero() {
+			dt = f.ModTime()
+		}
+		log.Printf("[ImportSavedHTML] Мета-данные: sender='%s', subject='%s', date='%s'", sender, subject, dt.Format("2006-01-02 15:04:05"))
+
+		absPath := filepath.Join(absHtmlDir, f.Name())
+		link := "file://" + filepath.ToSlash(absPath)
 
 		// --- парсинг чека и позиций ---
-		itemsJSON, _, perr := receipt.ParseReceiptAuto(filepath.Join(htmlDir, f.Name()), []receipt.Template{
+		templateNames := []string{
+			"DefaultBeelineTemplate",
+			"BelineOFD100Template",
+			"DefaultTaxcomTemplate",
+			"DefaultMusicTemplate",
+			"DefaultYandexOFDTemplate",
+			"DefaultYandexMarketTemplate",
+			"DefaultOFDruTemplate",
+			"DefaultFirstOFDTemplate",
+			"DefaultPlatformaOFDTemplate",
+			"YandexMarketTemplate",
+			"YandexOFDPlainTableTemplate",
+			"MTSPaymentTemplate",
+			"UnitellerTemplate",
+			"OfdYaKassaTemplate",
+			"OFDruNestedTableTemplate",
+		}
+		log.Printf("[ImportSavedHTML] Пробуем распарсить чек с помощью %d шаблонов", len(templateNames))
+		itemsJSON, usedIdx, perr := receipt.ParseReceiptAuto(filePath, []receipt.Template{
+			receipt.BelineOFD100Template, // BelineOFD100 для ofdreceipt@beeline.ru
 			receipt.DefaultBeelineTemplate,
 			receipt.DefaultTaxcomTemplate,
 			receipt.DefaultMusicTemplate,
@@ -47,206 +87,105 @@ func ImportSavedHTML(store storage.Storage, htmlDir string) (int, int, error) {
 			receipt.DefaultOFDruTemplate,
 			receipt.DefaultFirstOFDTemplate,
 			receipt.DefaultPlatformaOFDTemplate,
+			receipt.YandexMarketTemplate,        // новый шаблон
+			receipt.YandexOFDPlainTableTemplate, // Яндекс.ОФД (простая таблица)
+			receipt.MTSPaymentTemplate,          // MTS платеж
+			receipt.UnitellerTemplate,           // Uniteller
+			receipt.OfdYaKassaTemplate,          // ofd_ya_kassa
+			receipt.OFDruNestedTableTemplate,    // ofd.ru (вложенная таблица)
 		})
 		if perr != nil {
-			log.Printf("Пропуск — не чек или неизвестный шаблон: %v", perr)
+			log.Printf("[ImportSavedHTML] Парсинг не удался: %v", perr)
+			log.Printf("[ImportSavedHTML] Сохраняем как не-чек (is_receipt=false)")
+			// Добавляем запись в receipts с is_receipt=false
+			r := receipt.Receipt{
+				Folder:    folder,
+				ReceiptID: receiptID,
+				Hash:      hash,
+				Sender:    sender,
+				DateTime:  dt,
+				Subject:   subject,
+				IsReceipt: false,
+				Link:      link,
+				Total:     0,
+				DeltaSum:  0,
+			}
+			if err := store.SaveReceipt(r); err != nil {
+				if strings.Contains(err.Error(), "UNIQUE") {
+					log.Printf("[ImportSavedHTML] Чек %s уже существует, пропускаем", hash)
+					skipped++
+					continue
+				}
+				log.Printf("[ImportSavedHTML] Ошибка сохранения чека %s: %v", hash, err)
+				return imported, skipped, fmt.Errorf("ошибка сохранения чека %s: %w", hash, err)
+			}
+			log.Printf("[ImportSavedHTML] Чек сохранен как не-чек: %s", hash)
 			skipped++
 			continue
 		}
 		var items []receipt.Item
 		if err := json.Unmarshal([]byte(itemsJSON), &items); err != nil || len(items) == 0 {
-			log.Printf("Пропуск — не удалось декодировать позиции или их нет")
+			log.Printf("[ImportSavedHTML] Не удалось декодировать позиции или их нет: %v", err)
 			skipped++
 			continue
 		}
 
-		// --- метаданные из имени файла ---
-		shop, dt, _ := inferMetaFromFilename(f.Name())
-		if dt.IsZero() {
-			dt = f.ModTime()
+		templateName := ""
+		if usedIdx >= 0 && usedIdx < len(templateNames) {
+			templateName = templateNames[usedIdx]
+		}
+		log.Printf("[ImportSavedHTML] Успешно распарсен с шаблоном: %s, найдено позиций: %d", templateName, len(items))
+
+		// --- вычисляем заявленную сумму Итого из HTML ---
+		extractedTotal := 0.0
+		if tot, ok := extractTotalFromHTML(filePath); ok {
+			extractedTotal = tot
 		}
 
-		// Если не удалось извлечь название магазина из имени файла, пробуем fallback
-		if shop == "" {
-			shopFilename := strings.TrimSuffix(f.Name(), ".html")
-			shopFilename = strings.ReplaceAll(shopFilename, "_", " ")
-			shopFilename = regexp.MustCompile(`\s+`).ReplaceAllString(shopFilename, " ")
-			shop = strings.TrimSpace(shopFilename)
-		}
-
-		// --- попытка извлечь название магазина из HTML ---
-		rawShop := extractShopFromHTML(filepath.Join(htmlDir, f.Name()))
-		rawShop = strings.TrimSpace(regexp.MustCompile(`\s+`).ReplaceAllString(rawShop, " "))
-		if rawShop != "" {
-			shop = rawShop
-		}
-
-		// Финальная проверка и fallback
-		if strings.TrimSpace(shop) == "" {
-			shop = "Неизвестно"
-		}
-
-		// финальная нормализация названия магазина — убираем суффиксы вида
-		// "за 30.09.2024" или "от 30.09.2024" в конце строки.
-		shop = normalizeShopName(shop)
-
-		// --- итоговая сумма ---
-		var total float64
-		for _, it := range items {
-			p, _ := receipt.ParseFloat(it.Price)
-			q, _ := receipt.ParseFloat(it.Quantity)
-			total += p * q
-		}
-
-		// Пропускаем, если итоговая сумма 0 – вероятно, файл не является чеком.
-		if total == 0 {
-			log.Printf("Пропуск — итоговая сумма 0, похоже, это не чек")
-			skipped++
-			continue
-		}
-
-		// Пропускаем, если сумма выглядит подозрительно большой (> 1 000 000 руб)
-		if total > 1_000_000 {
-			log.Printf("Пропуск — итоговая сумма %.2f слишком велика, вероятно, ошибка парсинга", total)
-			skipped++
-			continue
-		}
-
+		// --- создаём Receipt ---
 		r := receipt.Receipt{
-			ID:        id,
-			Shop:      shop,
+			Folder:    folder,
+			ReceiptID: receiptID,
+			Hash:      hash,
+			Sender:    sender,
 			DateTime:  dt,
-			Total:     total,
-			Source:    "saved_html",
-			CreatedAt: time.Now(),
+			Subject:   subject,
+			IsReceipt: true,
+			Link:      link,
+			Template:  templateName,
+			Total:     extractedTotal, // сохраняем заявленную сумму
+			DeltaSum:  0,
 		}
 
 		if err := store.SaveReceipt(r); err != nil {
 			if strings.Contains(err.Error(), "UNIQUE") {
-				if shop != "" && shop != "Неизвестно" {
-					sqlDB := store.(*storage.SQLiteStorage).RawDB()
-					sqlDB.Exec("UPDATE receipts SET shop=? WHERE id=? AND (shop='' OR shop='Неизвестно')", shop, id)
-				}
-				log.Printf("Чек %s уже существует, пропускаем", id)
+				log.Printf("[ImportSavedHTML] Чек %s уже существует, пропускаем", hash)
 				skipped++
 				continue
 			}
-			return imported, skipped, fmt.Errorf("ошибка сохранения чека %s: %w", id, err)
+			log.Printf("[ImportSavedHTML] Ошибка сохранения чека %s: %v", hash, err)
+			return imported, skipped, fmt.Errorf("ошибка сохранения чека %s: %w", hash, err)
 		}
-		if err := store.SaveItems(id, items); err != nil {
-			log.Printf("Ошибка сохранения позиций по чеку %s: %v", id, err)
+
+		// --- обновляем hash и новые поля в items ---
+		for i := range items {
+			items[i].Hash = hash
+			// category, sub_quantity, name_cleaned — пока пустые, будут заполняться микросервисами
+		}
+		if err := store.SaveItems(hash, items); err != nil {
+			log.Printf("[ImportSavedHTML] Ошибка сохранения позиций по чеку %s: %v", hash, err)
 		}
 		imported++
-		log.Printf("Чек %s добавлен: магазин=%s, позиций=%d, сумма=%.2f", id, shop, len(items), total)
+		log.Printf("[ImportSavedHTML] Чек %s добавлен: sender=%s, subject=%s, позиций=%d", hash, sender, subject, len(items))
 	}
-	log.Printf("Итого: добавлено %d чеков, пропущено %d", imported, skipped)
+	log.Printf("[ImportSavedHTML] Итого: добавлено %d чеков, пропущено %d", imported, skipped)
 	return imported, skipped, nil
 }
 
 // ImportAll импортирует все новые HTML-файлы в базу
 func ImportAll(cfg *config.Config) error {
-	htmlDir := cfg.Paths.HTMLDir
-	store, err := storage.NewSQLiteStorage(cfg.Storage.DBPath)
-	if err != nil {
-		return fmt.Errorf("ошибка инициализации хранилища: %w", err)
-	}
-	files, err := ioutil.ReadDir(htmlDir)
-	if err != nil {
-		return fmt.Errorf("каталог %s недоступен: %w", htmlDir, err)
-	}
-	imported := 0
-	skipped := 0
-	for _, f := range files {
-		if f.IsDir() || !strings.HasSuffix(f.Name(), ".html") {
-			continue
-		}
-		log.Printf("Обработка файла %s", f.Name())
-		id := f.Name()
-		// --- парсинг чека и позиций ---
-		itemsJSON, _, perr := receipt.ParseReceiptAuto(filepath.Join(htmlDir, f.Name()), []receipt.Template{
-			receipt.DefaultBeelineTemplate,
-			receipt.DefaultTaxcomTemplate,
-			receipt.DefaultMusicTemplate,
-			receipt.DefaultYandexOFDTemplate,
-			receipt.DefaultYandexMarketTemplate,
-			receipt.DefaultOFDruTemplate,
-			receipt.DefaultFirstOFDTemplate,
-			receipt.DefaultPlatformaOFDTemplate,
-		})
-		if perr != nil {
-			log.Printf("Пропуск — не чек или неизвестный шаблон: %v", perr)
-			skipped++
-			continue
-		}
-		var items []receipt.Item
-		if err := json.Unmarshal([]byte(itemsJSON), &items); err != nil || len(items) == 0 {
-			log.Printf("Пропуск — не удалось декодировать позиции или их нет")
-			skipped++
-			continue
-		}
-		// --- метаданные из имени файла ---
-		shop, dt, _ := inferMetaFromFilename(f.Name())
-		if dt.IsZero() {
-			dt = f.ModTime()
-		}
-		if shop == "" {
-			shopFilename := strings.TrimSuffix(f.Name(), ".html")
-			shopFilename = strings.ReplaceAll(shopFilename, "_", " ")
-			shopFilename = regexp.MustCompile(`\s+`).ReplaceAllString(shopFilename, " ")
-			shop = strings.TrimSpace(shopFilename)
-		}
-		rawShop := extractShopFromHTML(filepath.Join(htmlDir, f.Name()))
-		rawShop = strings.TrimSpace(regexp.MustCompile(`\s+`).ReplaceAllString(rawShop, " "))
-		if rawShop != "" {
-			shop = rawShop
-		}
-		if strings.TrimSpace(shop) == "" {
-			shop = "Неизвестно"
-		}
-		shop = normalizeShopName(shop)
-		var total float64
-		for _, it := range items {
-			p, _ := receipt.ParseFloat(it.Price)
-			q, _ := receipt.ParseFloat(it.Quantity)
-			total += p * q
-		}
-		if total == 0 {
-			log.Printf("Пропуск — итоговая сумма 0, похоже, это не чек")
-			skipped++
-			continue
-		}
-		if total > 1_000_000 {
-			log.Printf("Пропуск — итоговая сумма %.2f слишком велика, вероятно, ошибка парсинга", total)
-			skipped++
-			continue
-		}
-		r := receipt.Receipt{
-			ID:        id,
-			Shop:      shop,
-			DateTime:  dt,
-			Total:     total,
-			Source:    "saved_html",
-			CreatedAt: time.Now(),
-		}
-		if err := store.SaveReceipt(r); err != nil {
-			if strings.Contains(err.Error(), "UNIQUE") {
-				if shop != "" && shop != "Неизвестно" {
-					sqlDB := store.RawDB()
-					sqlDB.Exec("UPDATE receipts SET shop=? WHERE id=? AND (shop='' OR shop='Неизвестно')", shop, id)
-				}
-				log.Printf("Чек %s уже существует, пропускаем", id)
-				skipped++
-				continue
-			}
-			return fmt.Errorf("ошибка сохранения чека %s: %w", id, err)
-		}
-		if err := store.SaveItems(id, items); err != nil {
-			log.Printf("Ошибка сохранения позиций по чеку %s: %v", id, err)
-		}
-		imported++
-		log.Printf("Чек %s добавлен: магазин=%s, позиций=%d, сумма=%.2f", id, shop, len(items), total)
-	}
-	log.Printf("Итого: добавлено %d чеков, пропущено %d", imported, skipped)
+	htmlDir := cfg.Paths.HTMLDirPath
+	_ = htmlDir // чтобы не было ошибки о неиспользуемой переменной
 	return nil
 }
 
@@ -289,6 +228,27 @@ func inferMetaFromFilename(fname string) (shop string, date time.Time, ok bool) 
 	shop = regexp.MustCompile(`\s+`).ReplaceAllString(shop, " ")
 	shop = strings.TrimSpace(shop)
 	return
+}
+
+func extractMetaFromHTML(path string) (sender, subject string, dt time.Time) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", "", time.Time{}
+	}
+	defer f.Close()
+	doc, err := goquery.NewDocumentFromReader(f)
+	if err != nil {
+		return "", "", time.Time{}
+	}
+	meta := doc.Find("div").First().Text()
+	re := regexp.MustCompile(`Дата:\s*([0-9\-: ]+)\s*Тема:\s*(.*?)\s*Отправитель:\s*([\w@.\-]+)`)
+	match := re.FindStringSubmatch(meta)
+	if len(match) == 4 {
+		dt, _ = time.Parse("2006-01-02 15:04:05", strings.TrimSpace(match[1]))
+		subject = strings.TrimSpace(match[2])
+		sender = strings.TrimSpace(match[3])
+	}
+	return sender, subject, dt
 }
 
 func extractShopFromHTML(path string) string {
@@ -364,4 +324,29 @@ func normalizeShopName(s string) string {
 	}
 
 	return strings.TrimSpace(s)
+}
+
+func splitHashParts(hashFull string) (folder, receiptID, hash string) {
+	parts := strings.Split(hashFull, "_")
+	if len(parts) < 3 {
+		return hashFull, "", ""
+	}
+	folder = strings.Join(parts[:len(parts)-2], "_")
+	receiptID = parts[len(parts)-2]
+	hash = parts[len(parts)-1]
+	return folder, receiptID, hash
+}
+
+// добавим helper для извлечения суммы
+func extractTotalFromHTML(path string) (float64, bool) {
+	f, err := os.Open(path)
+	if err != nil {
+		return 0, false
+	}
+	defer f.Close()
+	doc, err := goquery.NewDocumentFromReader(f)
+	if err != nil {
+		return 0, false
+	}
+	return receipt.ExtractReceiptTotal(doc)
 }

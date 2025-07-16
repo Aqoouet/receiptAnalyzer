@@ -1,36 +1,84 @@
 package htmlimporter
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"receiptAnalyzer/internal/config"
+	"receiptAnalyzer/internal/storage"
 )
 
+// Глобальная переменная для конфигурации
+var globalConfig *config.Config
+
 func importHTMLHandler(w http.ResponseWriter, r *http.Request) {
-	cfg, err := config.LoadConfig("config.yaml")
+	store, err := storage.NewSQLiteStorage(globalConfig.Paths.DBPath)
 	if err != nil {
-		http.Error(w, "Config error: "+err.Error(), 500)
+		http.Error(w, "DB error: "+err.Error(), 500)
 		return
 	}
-	err = ImportAll(cfg)
+	imported, skipped, impErr := ImportSavedHTML(store, globalConfig.Paths.HTMLDirPath)
+	resp := struct {
+		Imported int    `json:"imported"`
+		Skipped  int    `json:"skipped"`
+		Error    string `json:"error,omitempty"`
+	}{
+		Imported: imported,
+		Skipped:  skipped,
+	}
+	if impErr != nil {
+		resp.Error = impErr.Error()
+		w.WriteHeader(500)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(resp)
+	log.Printf("/import-html: imported=%d, skipped=%d, error=%v", imported, skipped, impErr)
+}
+
+func deleteDBHandler(w http.ResponseWriter, r *http.Request) {
+	dbPath := globalConfig.Paths.DBPath
+	err := os.Remove(dbPath)
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		http.Error(w, "DB delete error: "+err.Error(), 500)
 		return
 	}
-	w.Write([]byte("OK"))
+	w.Write([]byte("DB deleted"))
+}
+
+func updateDBHandler(w http.ResponseWriter, r *http.Request) {
+	_, err := os.Stat(globalConfig.Paths.DBPath)
+	if err == nil {
+		// DB exists, try to open and recreate tables
+		store, err := storage.NewSQLiteStorage(globalConfig.Paths.DBPath)
+		if err != nil {
+			http.Error(w, "DB open error: "+err.Error(), 500)
+			return
+		}
+		_ = store // таблицы пересоздаются автоматически
+	} else {
+		// DB does not exist, will be created on next import
+	}
+	w.Write([]byte("DB structure updated"))
 }
 
 func StartServer() {
-	http.HandleFunc("/import-html", importHTMLHandler)
-	cfg, err := config.LoadConfig("config.yaml")
+	// Загружаем конфигурацию один раз при старте
+	var err error
+	globalConfig, err = config.LoadConfig("")
 	if err != nil {
 		log.Fatalf("Config error: %v", err)
 	}
+	log.Printf("Конфигурация загружена для htmlimporter")
+
+	http.HandleFunc("/import-html", importHTMLHandler)
+	http.HandleFunc("/delete-db", deleteDBHandler)
+	http.HandleFunc("/update-db", updateDBHandler)
+
 	port := os.Getenv("HTMLIMPORTER_PORT")
 	if port == "" {
-		port = fmt.Sprintf("%d", cfg.Ports.HTMLImporter)
+		port = fmt.Sprintf("%d", globalConfig.Ports.HTMLImporter)
 	}
 	log.Printf("Htmlimporter listening on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
