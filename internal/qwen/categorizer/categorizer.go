@@ -26,6 +26,10 @@ func StartServer() {
 	}
 	log.Printf("Конфигурация загружена для qwencategorizer")
 
+	// Загружаем кэш категорий из файла
+	loadCategoryCache()
+	log.Printf("Загружено %d записей кэша категорий", len(categoryCache))
+
 	http.HandleFunc("/categorize", categorizeHandler)
 
 	port := os.Getenv("QWEN_PORT")
@@ -61,11 +65,41 @@ func categorizeHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("No uncategorized items found"))
 		return
 	}
-	cats, err := qwen.CategorizeItems(items)
-	if err != nil {
-		http.Error(w, "Qwen error: "+err.Error(), 500)
-		return
+
+	// Разделяем товары на уже закэшированные и новые
+	var toQuery []string
+	cats := make(map[string]string)
+
+	cacheMu.RLock()
+	for _, it := range items {
+		if cat, ok := categoryCache[it]; ok {
+			cats[it] = cat // из кэша
+		} else {
+			toQuery = append(toQuery, it)
+		}
 	}
+	cacheMu.RUnlock()
+
+	// Запрашиваем Qwen только для новых товаров
+	if len(toQuery) > 0 {
+		freshCats, err := qwen.CategorizeItems(toQuery)
+		if err != nil {
+			http.Error(w, "Qwen error: "+err.Error(), 500)
+			return
+		}
+
+		// Обновляем кэш
+		cacheMu.Lock()
+		for k, v := range freshCats {
+			categoryCache[k] = v
+			cats[k] = v
+		}
+		cacheMu.Unlock()
+		// Сохраняем кэш на диск (best effort)
+		saveCategoryCache()
+	}
+
+	// Обновляем БД
 	if err := updateCategories(db, cats); err != nil {
 		http.Error(w, "DB update error: "+err.Error(), 500)
 		return
