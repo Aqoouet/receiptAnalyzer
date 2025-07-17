@@ -7,7 +7,7 @@ import (
 )
 
 // Путь к файлу, где будет храниться кэш категорий.
-const cacheFilePath = "category_cache.json"
+const cacheFilePath = "internal/qwen/category_cache.json"
 
 // categoryCache хранит уже определённые категории для товаров.
 var (
@@ -29,8 +29,7 @@ func loadCategoryCache() {
 // saveCategoryCache сохраняет кэш в файл.
 func saveCategoryCache() {
 	cacheMu.RLock()
-	defer cacheMu.RUnlock()
-
 	data, _ := json.MarshalIndent(categoryCache, "", "  ")
+	cacheMu.RUnlock()
 	_ = os.WriteFile(cacheFilePath, data, 0644)
 }

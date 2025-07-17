@@ -7,6 +7,11 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
+	"strings"
+	"time"
+
+	"golang.org/x/text/unicode/norm"
 
 	"receiptAnalyzer/internal/config"
 	"receiptAnalyzer/internal/qwen"
@@ -18,8 +23,16 @@ var globalConfig *config.Config
 
 // StartServer запускает HTTP сервер категоризации
 func StartServer() {
+	// Настраиваем логирование в файл
+	logFile, err := os.OpenFile("qwencategorizer.log", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
+	if err != nil {
+		log.Printf("Ошибка открытия файла лога: %v", err)
+	} else {
+		log.SetOutput(logFile)
+		defer logFile.Close()
+	}
+
 	// Загружаем конфигурацию один раз при старте
-	var err error
 	globalConfig, err = config.LoadConfig("")
 	if err != nil {
 		log.Fatalf("Config error: %v", err)
@@ -66,37 +79,117 @@ func categorizeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Разделяем товары на уже закэшированные и новые
-	var toQuery []string
-	cats := make(map[string]string)
+	// Разделяем товары на уже закэшированные и новые, с учётом нормализации
+	var toQuery []string            // нормализованные имена, которых нет в кэше
+	cats := make(map[string]string) // оригинальное имя -> категория для обновления БД
+	nameVariants := make(map[string][]string)
 
 	cacheMu.RLock()
-	for _, it := range items {
-		if cat, ok := categoryCache[it]; ok {
-			cats[it] = cat // из кэша
+	for _, orig := range items {
+		normName := normalizeName(orig)
+		if normName == "" {
+			continue // пропускаем пустые
+		}
+		// Логируем упрощение названия
+		if normName != orig {
+			log.Printf("🔄 Упрощено: \"%s\" → \"%s\"", orig, normName)
+		}
+		nameVariants[normName] = append(nameVariants[normName], orig)
+
+		if cat, ok := categoryCache[normName]; ok {
+			cats[orig] = cat // категория уже известна
 		} else {
-			toQuery = append(toQuery, it)
+			// в toQuery добавляем только один раз для каждого normName
+			if len(nameVariants[normName]) == 1 {
+				// В запрос отправляем упрощённое (нормализованное) название
+				toQuery = append(toQuery, normName)
+			}
 		}
 	}
 	cacheMu.RUnlock()
 
 	// Запрашиваем Qwen только для новых товаров
 	if len(toQuery) > 0 {
-		freshCats, err := qwen.CategorizeItems(toQuery)
-		if err != nil {
-			http.Error(w, "Qwen error: "+err.Error(), 500)
-			return
-		}
+		const batchSize = 50 // Увеличено до 50 для более эффективной обработки
+		const maxRetries = 10
+		const retryDelay = 5 * time.Second   // Уменьшено с 10 до 5 секунд
+		const requestDelay = 8 * time.Second // Уменьшено с 15 до 8 секунд
 
-		// Обновляем кэш
-		cacheMu.Lock()
-		for k, v := range freshCats {
-			categoryCache[k] = v
-			cats[k] = v
+		for i := 0; i < len(toQuery); i += batchSize {
+			end := i + batchSize
+			if end > len(toQuery) {
+				end = len(toQuery)
+			}
+			batch := toQuery[i:end]
+
+			// Запоминаем размер кэша до обработки
+			cacheMu.RLock()
+			cacheSizeBefore := len(categoryCache)
+			cacheMu.RUnlock()
+
+			// Retry логика
+			var freshCats map[string]string
+			var err error
+			for retry := 0; retry < maxRetries; retry++ {
+				freshCats, err = qwen.CategorizeItems(batch)
+				if err == nil && len(freshCats) > 0 {
+					break // успешный ответ
+				}
+
+				// Проверяем на код 429 (rate limit)
+				if err != nil && strings.Contains(err.Error(), "rate limit exceeded (429)") {
+					log.Printf("🚫 Получен код 429. Прекращаем отправку запросов.")
+					break // выходим из retry цикла
+				}
+
+				if retry < maxRetries-1 {
+					log.Printf("Попытка %d/%d неудачна (batch %d-%d): %v, повтор через %v",
+						retry+1, maxRetries, i, end, err, retryDelay)
+					time.Sleep(retryDelay)
+				}
+			}
+
+			// Если получили 429, прекращаем обработку всех батчей
+			if err != nil && strings.Contains(err.Error(), "rate limit exceeded (429)") {
+				log.Printf("🚫 Прекращаем обработку из-за rate limit (429)")
+				break // выходим из цикла батчей
+			}
+
+			if err != nil || len(freshCats) == 0 {
+				log.Printf("Qwen error после %d попыток (batch %d-%d): %v", maxRetries, i, end, err)
+				continue // пропускаем ошибочный батч, продолжаем остальные
+			}
+
+			// Обновляем кэш и сопоставляем оригинальные варианты
+			cacheMu.Lock()
+			for origName, v := range freshCats {
+				// Сохраняем в кэш по упрощённому названию
+				normName := normalizeName(origName)
+				categoryCache[normName] = v
+				for _, orig := range nameVariants[normName] {
+					cats[orig] = v
+				}
+			}
+			cacheMu.Unlock()
+
+			// Получаем размер кэша после обновления
+			cacheMu.RLock()
+			cacheSizeAfter := len(categoryCache)
+			cacheMu.RUnlock()
+
+			// Сохраняем кэш на диск после каждого батча
+			saveCategoryCache()
+
+			// Логируем изменение размера кэша
+			cacheIncrease := cacheSizeAfter - cacheSizeBefore
+			log.Printf("Обработан батч %d-%d (%d товаров), кэш: %d→%d (+%d)", i, end, len(batch), cacheSizeBefore, cacheSizeAfter, cacheIncrease)
+
+			// Задержка между запросами для соблюдения rate limit
+			if end < len(toQuery) {
+				log.Printf("⏳ Ожидание %v между запросами...", requestDelay)
+				time.Sleep(requestDelay)
+			}
 		}
-		cacheMu.Unlock()
-		// Сохраняем кэш на диск (best effort)
-		saveCategoryCache()
 	}
 
 	// Обновляем БД
@@ -173,4 +266,55 @@ func updateCategories(db *sql.DB, cats map[string]string) error {
 		}
 	}
 	return tx.Commit()
+}
+
+// normalizeName приводит строку к NFC, убирает непечатываемые символы и обрезает пробелы
+func normalizeName(s string) string {
+	// Приводим к NFC
+	s = norm.NFC.String(s)
+
+	// Убираем все непечатываемые символы и переносы строк
+	var result strings.Builder
+	for _, r := range s {
+		if r >= 32 && r != 127 && r != '\n' && r != '\r' && r != '\t' { // печатаемые символы без переносов
+			result.WriteRune(r)
+		}
+	}
+
+	// Убираем множественные пробелы и обрезаем
+	cleaned := result.String()
+	cleaned = strings.ReplaceAll(cleaned, "  ", " ") // заменяем двойные пробелы на одинарные
+	for strings.Contains(cleaned, "  ") {
+		cleaned = strings.ReplaceAll(cleaned, "  ", " ")
+	}
+
+	// Убираем цифры и единицы измерения
+	cleaned = removeNumbersAndUnits(cleaned)
+
+	return strings.TrimSpace(cleaned)
+}
+
+// removeNumbersAndUnits удаляет цифры и единицы измерения
+func removeNumbersAndUnits(s string) string {
+	// Регулярные выражения для удаления цифр и единиц
+	patterns := []string{
+		`\d+[.,]?\d*\s*(г|кг|л|мл|шт|шт\.|уп|пак|банк|бутыл|короб|упаковк)`, // цифры + единицы
+		`\d+[.,]?\d*%`, // проценты
+		`\d+[.,]?\d*`,  // просто цифры
+		`[0-9]+`,       // любые цифры
+	}
+
+	result := s
+	for _, pattern := range patterns {
+		re := regexp.MustCompile(pattern)
+		result = re.ReplaceAllString(result, "")
+	}
+
+	// Убираем лишние пробелы после удаления
+	result = strings.ReplaceAll(result, "  ", " ")
+	for strings.Contains(result, "  ") {
+		result = strings.ReplaceAll(result, "  ", " ")
+	}
+
+	return result
 }
