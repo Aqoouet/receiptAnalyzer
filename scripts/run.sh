@@ -5,23 +5,23 @@ set -e
 # Запуск всех микросервисов в фоне с логами
 
 echo "Запуск mailfetcher..."
-go run ./cmd/mailfetcher/ > mailfetcher.log 2>&1 &
+go run ./cmd/mailfetcher/ &
 MAILFETCHER_PID=$!
 
 echo "Запуск htmlimporter..."
-go run ./cmd/htmlimporter/ > htmlimporter.log 2>&1 &
+go run ./cmd/htmlimporter/ &
 HTMLIMPORTER_PID=$!
 
 echo "Запуск xlsxexporter..."
-go run ./cmd/xlsxexporter/ > xlsxexporter.log 2>&1 &
+go run ./cmd/xlsxexporter/ &
 XLSXEXPORTER_PID=$!
 
 echo "Запуск qwencategorizer..."
-go run ./cmd/qwencategorizer/ > qwencategorizer.log 2>&1 &
+go run ./cmd/qwencategorizer/ &
 QWENCATEGORIZER_PID=$!
 
 echo "Запуск orchestrator..."
-go run ./cmd/orchestrator/ > orchestrator.log 2>&1 &
+go run ./cmd/orchestrator/ &
 ORCHESTRATOR_PID=$!
 
 # Функция для остановки всех сервисов

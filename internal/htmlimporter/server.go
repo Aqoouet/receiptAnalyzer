@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"receiptAnalyzer/internal/config"
+	"receiptAnalyzer/internal/htmlimporter/shop"
 	"receiptAnalyzer/internal/storage"
 )
 
@@ -63,6 +64,59 @@ func updateDBHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("DB structure updated"))
 }
 
+func updateShopsHandler(w http.ResponseWriter, r *http.Request) {
+	// Открываем БД
+	store, err := storage.NewSQLiteStorage(globalConfig.Paths.DBPath)
+	if err != nil {
+		http.Error(w, "DB error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer store.Close()
+	db := store.RawDB()
+
+	// Обновляем магазины
+	updated, skipped, err := shop.UpdateShops(db)
+	if err != nil {
+		http.Error(w, "Update shops error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	resp := struct {
+		Updated int `json:"updated"`
+		Skipped int `json:"skipped"`
+	}{Updated: updated, Skipped: skipped}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(resp)
+	log.Printf("/update-shops: updated=%d, skipped=%d", updated, skipped)
+}
+
+func clearShopsHandler(w http.ResponseWriter, r *http.Request) {
+	// Открываем БД
+	store, err := storage.NewSQLiteStorage(globalConfig.Paths.DBPath)
+	if err != nil {
+		http.Error(w, "DB error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer store.Close()
+	db := store.RawDB()
+
+	// Очищаем магазины
+	cleared, err := shop.ClearShops(db)
+	if err != nil {
+		http.Error(w, "Clear shops error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	resp := struct {
+		Cleared int `json:"cleared"`
+	}{Cleared: cleared}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(resp)
+	log.Printf("/clear-shops: cleared=%d", cleared)
+}
+
 func StartServer() {
 	// Загружаем конфигурацию один раз при старте
 	var err error
@@ -75,6 +129,8 @@ func StartServer() {
 	http.HandleFunc("/import-html", importHTMLHandler)
 	http.HandleFunc("/delete-db", deleteDBHandler)
 	http.HandleFunc("/update-db", updateDBHandler)
+	http.HandleFunc("/update-shops", updateShopsHandler)
+	http.HandleFunc("/clear-shops", clearShopsHandler)
 
 	port := os.Getenv("HTMLIMPORTER_PORT")
 	if port == "" {

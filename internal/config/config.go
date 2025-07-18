@@ -84,9 +84,7 @@ func LoadConfig(path string) (*Config, error) {
 		cfg.SearchKeywords = []string{"чек", "ЧЕК", "Чек"}
 	}
 	// Формируем полный путь к базе
-	if len(cfg.Paths.DBPath) > 0 && len(cfg.Paths.DBPath) > 0 {
-		cfg.Paths.DBPath = cfg.Paths.DBPath
-	}
+	// (убрано дублирование проверки)
 
 	// Логируем только при первой загрузке (можно убрать если не нужно)
 	// log.Printf("Конфигурация загружена: IMAP=%s, пользователь=%s, БД=%s, HTML=%s, Порты: mailfetcher=%d, htmlimporter=%d, xlsxexporter=%d, qwencategorizer=%d, mailbox_prefixes=%v",

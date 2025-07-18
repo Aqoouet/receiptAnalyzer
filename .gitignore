@@ -6,6 +6,12 @@ output/
 *.db
 *.xlsx
 
+# Исключения для важных файлов (чтобы они отображались в IDE)
+!output/db_dir/
+!output/db_dir/*.db
+!output/db_dir/*.xlsx
+!receipts.db
+
 # Временные файлы
 *.tmp
 *.log
