@@ -4,14 +4,15 @@
 -- Включаем форматированный вывод
 .mode column
 .headers on
-.width 30 12 15 12
+.width 30 12 15 12 12
 
 -- Статистика по магазинам
 SELECT 
     COALESCE(shop, 'Не указан') as 'Магазин',
     COUNT(*) as 'Чеков',
     ROUND(SUM(total), 2) as 'Сумма',
-    ROUND(AVG(total), 2) as 'Средний'
+    ROUND(AVG(total), 2) as 'Средний',
+    ROUND(AVG(delta_sum), 2) as 'Средняя дельта'
 FROM receipts 
 WHERE shop IS NOT NULL 
 GROUP BY shop 
