@@ -23,8 +23,13 @@ var globalConfig *config.Config
 
 // StartServer запускает HTTP сервер категоризации
 func StartServer() {
+	// Создаем папку logs если её нет
+	if err := os.MkdirAll("logs", 0755); err != nil {
+		log.Printf("Ошибка создания папки logs: %v", err)
+	}
+
 	// Настраиваем логирование в файл
-	logFile, err := os.OpenFile("qwencategorizer.log", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
+	logFile, err := os.OpenFile("logs/qwencategorizer.log", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
 		log.Printf("Ошибка открытия файла лога: %v", err)
 	} else {
@@ -75,6 +80,7 @@ func categorizeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(items) == 0 {
+		log.Printf("✅ Все товары уже категоризированы - нечего добавлять")
 		w.Write([]byte("No uncategorized items found"))
 		return
 	}
@@ -109,6 +115,12 @@ func categorizeHandler(w http.ResponseWriter, r *http.Request) {
 	cacheMu.RUnlock()
 
 	// Запрашиваем Qwen только для новых товаров
+	if len(toQuery) == 0 {
+		log.Printf("✅ Все %d товаров уже есть в кэше - нечего запрашивать у Qwen", len(items))
+	} else {
+		log.Printf("📤 Отправляем %d новых товаров в Qwen (из %d всего)", len(toQuery), len(items))
+	}
+
 	if len(toQuery) > 0 {
 		const batchSize = 50 // Увеличено до 50 для более эффективной обработки
 		const maxRetries = 10

@@ -17,6 +17,7 @@ receiptAnalyzer
 *.dll
 *.so
 *.dylib
+binary/
 
 # IDE и редакторы
 .vscode/

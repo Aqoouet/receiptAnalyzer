@@ -14,14 +14,14 @@ email:
   oauth_token: "your-oauth-token-here"
 
 paths:
-  # Путь к SQLite базе данных
-  db_path: "output/db_dir/receipts.db"
+  # Путь к SQLite базе данных (абсолютный путь)
+  db_path: "/path/to/your/project/output/db_dir/receipts.db"
   
-  # Путь к Excel файлу с экспортом
-  xlsx_path: "output/db_dir/receipts.xlsx"
+  # Путь к Excel файлу с экспортом (абсолютный путь)
+  xlsx_path: "/path/to/your/project/output/db_dir/receipts.xlsx"
   
-  # Папка для сохранения HTML писем
-  html_dir_path: "output/msg_html"
+  # Папка для сохранения HTML писем (абсолютный путь)
+  html_dir_path: "/path/to/your/project/output/msg_html"
 
 ports:
   mailfetcher: 8081

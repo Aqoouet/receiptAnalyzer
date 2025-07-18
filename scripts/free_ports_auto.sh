@@ -6,12 +6,21 @@
 set -e
 
 # Определяем путь к конфигурационному файлу
-CONFIG_FILE="${1:-config.yaml}"
+# Если путь не указан, ищем config.yaml в корне проекта
+if [ -n "$1" ]; then
+    CONFIG_FILE="$1"
+else
+    # Определяем корень проекта (директория, содержащая config.yaml)
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+    CONFIG_FILE="$PROJECT_ROOT/config.yaml"
+fi
 
 # Проверяем существование файла
 if [ ! -f "$CONFIG_FILE" ]; then
     echo "Ошибка: Файл конфигурации '$CONFIG_FILE' не найден"
     echo "Использование: $0 [config_file]"
+    echo "Если config_file не указан, скрипт ищет config.yaml в корне проекта"
     exit 1
 fi
 
