@@ -1,0 +1,29 @@
+[
+  {
+    "hash": "ec282194c82c6c0ff3b7e9ae3af790eda0433af88ab4340441feb8edd4d82cd3",
+    "total": 39672.01,
+    "items": [
+      { "name": "Агентское вознаграждение ; шт.", "quantity": 1.0, "unit_price": 7934.40 },
+      { "name": "Сборка/установка ; шт.", "quantity": 1.0, "unit_price": 3606.55 },
+      { "name": "Доставка ; шт.", "quantity": 1.0, "unit_price": 3606.55 },
+      { "name": "Комплект мебели 200222-7777-0007 ШУ ; шт.", "quantity": 1.0, "unit_price": 24524.51 }
+    ]
+  },
+  { 
+    "hash": "1a288bcecef0c332708b9b28a85968a5270a3fc49db9baabac69754c0b4b786f",
+    "total": 7373.99,
+    "items": [
+        { "name": "Агентское вознаграждение ; шт.", "quantity": 1.0, "unit_price": 1474.80 },
+        { "name": "Сборка/установка ; шт.", "quantity": 1.0, "unit_price": 670.36 },
+        { "name": "Доставка ; шт.", "quantity": 1.0, "unit_price": 670.36 },
+        { "name": "Комплект мебели 200222-7777-0007 ШУ ; шт.", "quantity": 1.0, "unit_price": 4558.47 }
+    ]
+  },
+  { 
+    "hash": "a1037b63cdd26a303bd0ee349ae3a730475d22ffe27a1a7eddafb4271a04af84",
+    "total": 20163.99,
+    "items": [
+        { "name": "Комплект мебели", "quantity": 1.0, "unit_price": 20163.99 }
+    ]
+  }
+] 
