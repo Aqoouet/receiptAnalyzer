@@ -119,7 +119,7 @@ func clearShopsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func manualCorrectionsHandler(w http.ResponseWriter, r *http.Request) {
-	correctionDir := "internal/htmlimporter/manual_correction" // директория с JSON-файлами исправлений
+	correctionDir := "internal/htmlimporter/manual_correction/active" // директория с активными JSON-файлами исправлений
 
 	// Открываем БД
 	store, err := storage.NewSQLiteStorage(globalConfig.Paths.DBPath)

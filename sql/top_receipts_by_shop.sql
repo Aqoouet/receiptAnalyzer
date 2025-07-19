@@ -4,7 +4,7 @@
 
 -- ПАРАМЕТР: ИЗМЕНИТЕ НАЗВАНИЕ МАГАЗИНА ЗДЕСЬ
 -- Примеры: 'Whoosh', 'ЯНДЕКС ЕДА', 'Вкусно и Точка', 'Mr.Doors'
-.parameter set :shop_name 'Mr.Doors'
+.parameter set :shop_name 'Неизвестный магазин'
 
 -- Включаем форматированный вывод
 .mode column

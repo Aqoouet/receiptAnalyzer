@@ -1,0 +1,110 @@
+[
+  {
+    "hash": "b6f1805c4663f728f5989b757e0bb83d93e7d79c8677dad7c0909942582bb584",
+    "total": 1150.00,
+    "fields": [
+      {
+        "field": "sender",
+        "value": "corrected@example.com"
+      },
+      {
+        "field": "subject",
+        "value": "Исправленный кассовый чек"
+      },
+      {
+        "field": "date_time",
+        "value": "2021-08-27 09:15:30"
+      },
+      {
+        "field": "is_receipt",
+        "value": true
+      },
+      {
+        "field": "template",
+        "value": "manual_correction"
+      },
+      {
+        "field": "shop",
+        "value": "Перекресток"
+      }
+    ]
+  },
+  {
+    "hash": "another_hash_example",
+    "items": [
+      {
+        "name": "Хлеб белый",
+        "quantity": 2,
+        "unit_price": 45.50,
+        "total": 91.00
+      },
+      {
+        "name": "Молоко 3.2%",
+        "quantity": 1,
+        "unit_price": 89.90,
+        "total": 89.90
+      },
+      {
+        "name": "Сыр Российский",
+        "quantity": 0.5,
+        "unit_price": 320.00,
+        "total": 160.00
+      }
+    ],
+    "fields": [
+      {
+        "field": "subject",
+        "value": "Покупка в магазине"
+      },
+      {
+        "field": "shop",
+        "value": "Магнит"
+      },
+      {
+        "field": "folder",
+        "value": "food_purchases"
+      }
+    ]
+  },
+  {
+    "hash": "third_example_hash",
+    "total": 500.00,
+    "fields": [
+      {
+        "field": "delta_sum",
+        "value": 0.0
+      },
+      {
+        "field": "folder",
+        "value": "corrected_folder"
+      },
+      {
+        "field": "receipt_id",
+        "value": "MANUAL_001"
+      },
+      {
+        "field": "link",
+        "value": "file:///path/to/corrected/receipt.html"
+      }
+    ]
+  },
+  {
+    "hash": "minimal_example",
+    "fields": [
+      {
+        "field": "sender",
+        "value": "simple@correction.com"
+      }
+    ]
+  },
+  {
+    "hash": "items_only_example",
+    "items": [
+      {
+        "name": "Простой товар",
+        "quantity": 1,
+        "unit_price": 100.00
+      }
+    ]
+  }
+] 
